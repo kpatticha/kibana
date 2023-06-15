@@ -208,6 +208,7 @@ export class Plugin implements InfraClientPluginClass {
               defaultMessage: 'Stream',
             }),
             path: '/stream',
+            navLinkStatus: AppNavLinkStatus.visible,
           },
           {
             id: 'anomalies',
@@ -250,6 +251,7 @@ export class Plugin implements InfraClientPluginClass {
           defaultMessage: 'Inventory',
         }),
         path: '/inventory',
+        navLinkStatus: AppNavLinkStatus.default,
       },
       {
         id: 'metrics-hosts',

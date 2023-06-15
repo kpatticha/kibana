@@ -9,7 +9,7 @@ xpack.securitySolution.enabled: false
 xpack.serverless.observability.enabled: true
 
 ## Configure plugins
-xpack.infra.logs.app_target: discover
+xpack.infra.logs.app_target: logs-ui
 
 ## Set the home route
 uiSettings.overrides.defaultRoute: /app/observability/landing

@@ -62,13 +62,21 @@ export class ObservabilityOnboardingPlugin
     // and go to /app/observabilityOnboarding
     if (isObservabilityOnboardingUiEnabled) {
       core.application.register({
-        navLinkStatus: AppNavLinkStatus.hidden,
+        navLinkStatus: AppNavLinkStatus.default,
         id: 'observabilityOnboarding',
         title: 'Observability Onboarding',
         order: 8500,
         euiIconType: 'logoObservability',
         category: DEFAULT_APP_CATEGORIES.observability,
         keywords: [],
+        deepLinks: [
+          {
+            id: 'observabilityOnboarding',
+            title: 'On boarding',
+            path: '/app/observabilityOnboarding',
+            navLinkStatus: AppNavLinkStatus.default,
+          },
+        ],
         async mount(appMountParameters: AppMountParameters) {
           // Load application bundle and Get start service
           const [{ renderApp }, [coreStart, corePlugins]] = await Promise.all([
