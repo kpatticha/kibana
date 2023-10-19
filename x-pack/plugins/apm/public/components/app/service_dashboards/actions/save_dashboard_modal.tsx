@@ -30,6 +30,7 @@ import { useApmPluginContext } from '../../../../context/apm_plugin/use_apm_plug
 import { useApmParams } from '../../../../hooks/use_apm_params';
 import { SERVICE_NAME } from '../../../../../common/es_fields/apm';
 import { MergedServiceDashboard } from '..';
+import { SelectServices } from './select_services';
 
 interface Props {
   onClose: () => void;
@@ -48,10 +49,12 @@ export function SaveDashboardModal({
     core: { notifications },
   } = useApmPluginContext();
   const { data: allAvailableDashboards, status } = useDashboardFetcher();
+  const [kuery, setKuery] = useState('');
+  const [multipleServicesEnabled, setMultipleServicesEnabled] = useState(false);
 
   let defaultOption: EuiComboBoxOptionOption<string> | undefined;
 
-  const [serviceFiltersEnabled, setserviceFiltersEnabled] = useState(
+  const [serviceFiltersEnabled, setServiceFiltersEnabled] = useState(
     (currentDashboard?.serviceEnvironmentFilterEnabled &&
       currentDashboard?.serviceNameFilterEnabled) ??
       true
@@ -177,33 +180,57 @@ export function SaveDashboardModal({
             isClearable={true}
           />
 
-          <EuiSwitch
-            css={{ alignItems: 'center' }}
-            compressed
-            label={
-              <p>
-                {i18n.translate(
-                  'xpack.apm.dashboard.addDashboard.useContextFilterLabel',
-                  {
-                    defaultMessage: 'Filter by service and environment',
-                  }
-                )}{' '}
-                <EuiToolTip
-                  position="bottom"
-                  content={i18n.translate(
-                    'xpack.apm.dashboard.addDashboard.useContextFilterLabel.tooltip',
+          <EuiFlexGroup gutterSize="s" direction="column">
+            <EuiSwitch
+              css={{ alignItems: 'center' }}
+              compressed
+              label={
+                <p>
+                  {i18n.translate(
+                    'xpack.apm.dashboard.addDashboard.useContextFilterLabel',
                     {
-                      defaultMessage:
-                        'Enabling this option will apply filters to the dashboard based on your chosen service and environment.',
+                      defaultMessage: 'Filter by service and environment',
                     }
-                  )}
-                >
-                  <EuiIcon type="questionInCircle" title="Icon with tooltip" />
-                </EuiToolTip>
-              </p>
-            }
-            onChange={() => setserviceFiltersEnabled(!serviceFiltersEnabled)}
-            checked={serviceFiltersEnabled}
+                  )}{' '}
+                  <EuiToolTip
+                    position="bottom"
+                    content={i18n.translate(
+                      'xpack.apm.dashboard.addDashboard.useContextFilterLabel.tooltip',
+                      {
+                        defaultMessage:
+                          'Enabling this option will apply filters to the dashboard based on your chosen service and environment.',
+                      }
+                    )}
+                  >
+                    <EuiIcon
+                      type="questionInCircle"
+                      title="Icon with tooltip"
+                    />
+                  </EuiToolTip>
+                </p>
+              }
+              onChange={() => setServiceFiltersEnabled(!serviceFiltersEnabled)}
+              checked={serviceFiltersEnabled}
+            />
+            <EuiSwitch
+              css={{ alignItems: 'center' }}
+              compressed
+              label={
+                <p>
+                  {i18n.translate('xpack.apm.dashboard.addDashboard.multiple', {
+                    defaultMessage: 'Apply to multiple services',
+                  })}
+                </p>
+              }
+              onChange={() =>
+                setMultipleServicesEnabled(!multipleServicesEnabled)
+              }
+              checked={multipleServicesEnabled}
+            />
+          </EuiFlexGroup>
+          <SelectServices
+            onChange={(kql: string) => setKuery(kql)}
+            isEnabled={multipleServicesEnabled}
           />
         </EuiFlexGroup>
       </EuiModalBody>
