@@ -16,9 +16,12 @@ export async function getApmEventClient({
   config,
   getApmIndices,
   request,
+  core,
+  endpoint,
 }: APMRouteHandlerResources): Promise<APMEventClient> {
   return withApmSpan('get_apm_event_client', async () => {
     const coreContext = await context.core;
+
     const [indices, includeFrozen] = await Promise.all([
       getApmIndices(),
       withApmSpan('get_ui_settings', () =>
@@ -37,6 +40,8 @@ export async function getApmEventClient({
         includeFrozen,
         forceSyntheticSource: config.forceSyntheticSource,
       },
+      analyticsService: core.setup.analytics,
+      endpoint,
     });
   });
 }

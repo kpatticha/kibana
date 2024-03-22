@@ -11,6 +11,7 @@ import {
   Logger,
   Plugin,
   PluginInitializerContext,
+  Event,
 } from '@kbn/core/server';
 import { isEmpty, mapValues } from 'lodash';
 import { Dataset } from '@kbn/rule-registry-plugin/server';
@@ -50,6 +51,8 @@ import { createApmSourceMapIndexTemplate } from './routes/source_maps/create_apm
 import { addApiKeysToEveryPackagePolicyIfMissing } from './routes/fleet/api_keys/add_api_keys_to_policies_if_missing';
 import { apmTutorialCustomIntegration } from '../common/tutorial/tutorials';
 import { registerAssistantFunctions } from './assistant_functions';
+import { CustomShipper } from '../server/utils/custom_shipper';
+import { ReplaySubject } from 'rxjs';
 
 export class APMPlugin
   implements
@@ -62,6 +65,7 @@ export class APMPlugin
 {
   private currentConfig?: APMConfig;
   private logger?: Logger;
+  private readonly events$ = new ReplaySubject<Event>();
 
   constructor(private readonly initContext: PluginInitializerContext) {
     this.initContext = initContext;
@@ -101,6 +105,7 @@ export class APMPlugin
     plugins.features.registerKibanaFeature(APM_FEATURE);
 
     registerFeaturesUsage({ licensingPlugin: plugins.licensing });
+    core.analytics.registerShipper(CustomShipper, this.events$);
 
     const getCoreStart = () =>
       core.getStartServices().then(([coreStart]) => coreStart);

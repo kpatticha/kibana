@@ -70,7 +70,7 @@ import type { UnifiedSearchPublicPluginStart } from '@kbn/unified-search-plugin/
 import { UsageCollectionStart } from '@kbn/usage-collection-plugin/public';
 import { DashboardStart } from '@kbn/dashboard-plugin/public';
 import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
-import { from } from 'rxjs';
+import { from, ReplaySubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import type { CloudSetup } from '@kbn/cloud-plugin/public';
 import type { ConfigSchema } from '.';

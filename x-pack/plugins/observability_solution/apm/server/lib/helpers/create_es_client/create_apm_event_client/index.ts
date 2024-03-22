@@ -4,7 +4,8 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-
+import { reportPerformanceMetricEvent } from '@kbn/ebt-tools';
+import { pick } from 'lodash';
 import type {
   EqlSearchRequest,
   FieldCapsRequest,
@@ -14,7 +15,11 @@ import type {
   TermsEnumRequest,
   TermsEnumResponse,
 } from '@elastic/elasticsearch/lib/api/types';
-import { ElasticsearchClient, KibanaRequest } from '@kbn/core/server';
+import {
+  AnalyticsServiceSetup,
+  ElasticsearchClient,
+  KibanaRequest,
+} from '@kbn/core/server';
 import type { ESSearchRequest, InferSearchResponseOf } from '@kbn/es-types';
 import { ProcessorEvent } from '@kbn/observability-plugin/common';
 import { unwrapEsResponse } from '@kbn/observability-plugin/server';
@@ -99,18 +104,24 @@ export interface APMEventClientConfig {
     includeFrozen: boolean;
     forceSyntheticSource: boolean;
   };
+  analyticsService: AnalyticsServiceSetup;
+  endpoint: string;
 }
 
 export class APMEventClient {
   private readonly esClient: ElasticsearchClient;
+  private readonly analyticsService: AnalyticsServiceSetup;
   private readonly debug: boolean;
   private readonly request: KibanaRequest;
   public readonly indices: APMIndices;
   private readonly includeFrozen: boolean;
   private readonly forceSyntheticSource: boolean;
+  private readonly endpoint: string;
 
   constructor(config: APMEventClientConfig) {
     this.esClient = config.esClient;
+    this.analyticsService = config.analyticsService;
+    this.endpoint = config.endpoint;
     this.debug = config.debug;
     this.request = config.request;
     this.indices = config.indices;
@@ -144,6 +155,7 @@ export class APMEventClient {
       operationName,
       requestParams: params,
       cb: () => {
+        const startTime = performance.now(); // Record start time
         const controller = new AbortController();
 
         const promise = withApmSpan(operationName, () => {
@@ -154,7 +166,20 @@ export class APMEventClient {
           );
         });
 
-        return unwrapEsResponse(promise);
+        return unwrapEsResponse(promise).then((result) => {
+          const endTime = performance.now(); // Record end time
+          const duration = endTime - startTime; // Calculate duration
+
+          reportPerformanceMetricEvent(this.analyticsService, {
+            eventName: 'TRACK_ENDPOINT',
+            duration: duration,
+            meta: {
+              endpoint: this.endpoint,
+              operationName: operationName,
+            },
+          });
+          return result;
+        });
       },
     });
   }
@@ -168,6 +193,7 @@ export class APMEventClient {
       indices: this.indices,
     });
 
+    console.log('...params.body', pick(params.body.query, '@timestamp'));
     const forceSyntheticSourceForThisRequest =
       this.forceSyntheticSource && events.includes(ProcessorEvent.metric);
 
@@ -192,6 +218,7 @@ export class APMEventClient {
         : {}),
     };
 
+    console.log('====endpoint===', this.endpoint);
     return this.callAsyncWithDebug({
       cb: (opts) =>
         this.esClient.search(searchParams, opts) as unknown as Promise<{

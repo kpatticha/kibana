@@ -127,6 +127,7 @@ export function registerRoutes({
             plugins,
             telemetryUsageCounter,
             getApmIndices,
+            endpoint,
             params: merge(
               {
                 query: {
@@ -171,6 +172,8 @@ export function registerRoutes({
             counterType: 'success',
           });
         }
+
+        console.log('body', body);
 
         return response.ok({ body });
       } catch (error) {
@@ -273,4 +276,5 @@ export interface APMRouteHandlerResources {
   telemetryUsageCounter?: TelemetryUsageCounter;
   kibanaVersion: string;
   getApmIndices: () => Promise<APMIndices>;
+  endpoint: string;
 }

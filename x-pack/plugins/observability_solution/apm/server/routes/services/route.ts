@@ -232,6 +232,11 @@ const servicesDetailedStatisticsRoute = createApmServerRoute({
       throw Boom.badRequest(`serviceNames cannot be empty`);
     }
 
+    console.log('=====');
+    console.log('start', start);
+    console.log('end', end);
+    console.log('=====');
+
     return getServiceTransactionDetailedStatsPeriods({
       environment,
       kuery,
