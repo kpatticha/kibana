@@ -9,19 +9,18 @@
 import { Client } from '@elastic/elasticsearch';
 import {
   ApmFields,
-  AssetDocument,
   ESDocumentWithOperation,
   LogDocument,
+  AssetDocument,
 } from '@kbn/apm-synthtrace-client';
-import { merge } from 'lodash';
 import { PassThrough, pipeline, Readable, Transform } from 'stream';
 import { SynthtraceEsClient, SynthtraceEsClientOptions } from '../shared/base_client';
 import { getDedotTransform } from '../shared/get_dedot_transform';
 import { getSerializeTransform } from '../shared/get_serialize_transform';
 import { Logger } from '../utils/create_logger';
 import { fork } from '../utils/stream_utils';
-import { createLogsServiceAssetsAggregator } from './aggregators/create_logs_service_assets_aggregator';
-import { createTracesServiceAssetsAggregator } from './aggregators/create_traces_service_assets_aggregator';
+import { createLogsAssetsAggregator } from './aggregators/create_logs_assets_aggregator';
+import { createTracesAssetsAggregator } from './aggregators/create_traces_assets_aggregator';
 
 export type AssetsSynthtraceEsClientOptions = Omit<SynthtraceEsClientOptions, 'pipeline'>;
 
@@ -37,10 +36,7 @@ export class AssetsSynthtraceEsClient extends SynthtraceEsClient<AssetDocument> 
 
 function assetsPipeline() {
   return (base: Readable) => {
-    const aggregators = [
-      createTracesServiceAssetsAggregator(),
-      createLogsServiceAssetsAggregator(),
-    ];
+    const aggregators = [createTracesAssetsAggregator(), createLogsAssetsAggregator()];
     return pipeline(
       base,
       getSerializeTransform(),
@@ -79,16 +75,12 @@ function getMergeAssetsTransform() {
   const mergedDocuments: Record<string, AssetDocument> = {};
   return new Transform({
     objectMode: true,
-    transform(nextDocument: ESDocumentWithOperation<AssetDocument>, encoding, callback) {
-      const assetId = nextDocument['asset.id'];
+    transform(document: ESDocumentWithOperation<AssetDocument>, encoding, callback) {
+      const assetId = document['asset.id'];
       if (!mergedDocuments[assetId]) {
-        mergedDocuments[assetId] = { ...nextDocument };
+        mergedDocuments[assetId] = { ...document };
       } else {
-        const mergedDocument = mergedDocuments[assetId];
-        mergedDocument['asset.signalTypes'] = merge(
-          mergedDocument['asset.signalTypes'],
-          nextDocument['asset.signalTypes']
-        );
+        mergedDocuments[assetId]['asset.signalTypes'].push(...document['asset.signalTypes']);
       }
       callback();
     },
