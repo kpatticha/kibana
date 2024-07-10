@@ -22,6 +22,7 @@ import {
   MultiSignalServicesTable,
   ServiceInventoryFieldName,
 } from './table/multi_signal_services_table';
+import { NoEntitiesEmptyState } from './table/no_entities_empty_state';
 
 type MainStatisticsApiResponse = APIReturnType<'GET /internal/apm/entities/services'>;
 
@@ -74,7 +75,7 @@ function useServicesEntitiesMainStatisticsFetcher() {
   return { mainStatisticsData: data, mainStatisticsStatus: status };
 }
 
-export const MultiSignalInventory = () => {
+export function MultiSignalInventory() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const { mainStatisticsData, mainStatisticsStatus } = useServicesEntitiesMainStatisticsFetcher();
 
@@ -86,6 +87,13 @@ export const MultiSignalInventory = () => {
     fieldsToSearch: [ServiceInventoryFieldName.ServiceName],
   });
 
+  const { data, status } = useFetcher((callApmApi) => {
+    return callApmApi('GET /internal/apm/has_entities');
+  }, []);
+
+  if (!data?.hasData) {
+    return <NoEntitiesEmptyState />;
+  }
   return (
     <>
       <EuiFlexGroup gutterSize="m">
@@ -122,4 +130,4 @@ export const MultiSignalInventory = () => {
       </EuiFlexGroup>
     </>
   );
-};
+}
