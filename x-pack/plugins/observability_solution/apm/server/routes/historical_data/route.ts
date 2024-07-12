@@ -9,7 +9,6 @@ import { createEntitiesESClient } from '../../lib/helpers/create_es_client/creat
 import { getApmEventClient } from '../../lib/helpers/get_apm_event_client';
 import { createApmServerRoute } from '../apm_routes/create_apm_server_route';
 import { hasHistoricalAgentData } from './has_historical_agent_data';
-import { hasEntitiesData } from './has_historical_entities_data';
 
 const hasDataRoute = createApmServerRoute({
   endpoint: 'GET /internal/apm/has_data',
