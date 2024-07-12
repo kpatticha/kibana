@@ -87,7 +87,7 @@ export function MultiSignalInventory() {
     fieldsToSearch: [ServiceInventoryFieldName.ServiceName],
   });
 
-  const { data, status } = useFetcher((callApmApi) => {
+  const { data } = useFetcher((callApmApi) => {
     return callApmApi('GET /internal/apm/has_entities');
   }, []);
 
