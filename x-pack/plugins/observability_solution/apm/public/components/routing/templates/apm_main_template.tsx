@@ -26,6 +26,8 @@ import { ApmEnvironmentFilter } from '../../shared/environment_filter';
 import { getNoDataConfig } from './no_data_config';
 import { useApmPluginContext } from '../../../context/apm_plugin/use_apm_plugin_context';
 import { EntityEnablement } from '../../shared/entity_enablement';
+import { CustomNoDataTemplate } from './custom_no_data_template';
+import { ServiceInventoryView } from '../../../context/entity_manager_context/entity_manager_context';
 
 // Paths that must skip the no data screen
 const bypassNoDataScreenPaths = ['/settings', '/diagnostics'];
@@ -76,7 +78,8 @@ export function ApmMainTemplate({
     entityCentricExperience,
     false
   );
-  const { isEntityCentricExperienceViewEnabled } = useEntityManagerEnablementContext();
+  const { isEntityCentricExperienceViewEnabled, serviceInventoryViewLocalStorageSetting } =
+    useEntityManagerEnablementContext();
 
   const ObservabilityPageTemplate = observabilityShared.navigation.PageTemplate;
 
@@ -96,8 +99,8 @@ export function ApmMainTemplate({
     [application?.capabilities.savedObjectsManagement.edit]
   );
 
-  const shouldBypassNoDataScreen = bypassNoDataScreenPaths.some((path) =>
-    location.pathname.includes(path)
+  const shouldBypassNoDataScreen = bypassNoDataScreenPaths.some(
+    (path) => location.pathname.includes(path) || isEntityCentricExperienceViewEnabled
   );
 
   const { data: fleetApmPoliciesData, status: fleetApmPoliciesStatus } = useFetcher(
@@ -114,6 +117,10 @@ export function ApmMainTemplate({
 
   const hasApmData = !!data?.hasData;
   const hasApmIntegrations = !!fleetApmPoliciesData?.hasApmPolicies;
+  const showNewEmptyState =
+    !hasApmData &&
+    isEntityCentricExperienceSettingEnabled &&
+    serviceInventoryViewLocalStorageSetting === ServiceInventoryView.classic;
 
   const noDataConfig = getNoDataConfig({
     basePath,
@@ -160,9 +167,16 @@ export function ApmMainTemplate({
     </EuiFlexGroup>
   );
 
-  const pageTemplate = (
+  const pageTemplate = showNewEmptyState ? (
+    <CustomNoDataTemplate isPageDataLoaded={isLoading === false} noDataConfig={noDataConfig} />
+  ) : (
     <ObservabilityPageTemplate
-      noDataConfig={shouldBypassNoDataScreen ? undefined : noDataConfig}
+      noDataConfig={
+        shouldBypassNoDataScreen ||
+        serviceInventoryViewLocalStorageSetting === ServiceInventoryView.entity
+          ? undefined
+          : noDataConfig
+      }
       isPageDataLoaded={isLoading === false}
       pageHeader={{
         rightSideItems,

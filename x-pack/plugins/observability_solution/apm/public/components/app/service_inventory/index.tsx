@@ -12,10 +12,14 @@ import { ApmServiceInventory } from './apm_signal_inventory';
 import { MultiSignalInventory } from './multi_signal_inventory';
 import { useApmParams } from '../../../hooks/use_apm_params';
 import { useEntityManagerEnablementContext } from '../../../context/entity_manager_context/use_entity_manager_enablement_context';
+import { ServiceInventoryView } from '../../../context/entity_manager_context/entity_manager_context';
 
 export function ServiceInventory() {
-  const { isEnablementPending, isEntityCentricExperienceViewEnabled } =
-    useEntityManagerEnablementContext();
+  const {
+    isEnablementPending,
+    serviceInventoryViewLocalStorageSetting,
+    isEntityCentricExperienceSettingEnabled,
+  } = useEntityManagerEnablementContext();
 
   const {
     query: { serviceGroup },
@@ -36,7 +40,9 @@ export function ServiceInventory() {
     );
   }
 
-  return isEntityCentricExperienceViewEnabled && isEmpty(serviceGroup) ? (
+  return serviceInventoryViewLocalStorageSetting === ServiceInventoryView.entity &&
+    isEntityCentricExperienceSettingEnabled &&
+    isEmpty(serviceGroup) ? (
     <MultiSignalInventory />
   ) : (
     <ApmServiceInventory />

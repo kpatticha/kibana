@@ -62,6 +62,7 @@ export function EntityManagerEnablementContextProvider({
         serviceInventoryViewLocalStorageSetting,
         setServiceInventoryViewLocalStorageSetting,
         isEntityCentricExperienceViewEnabled,
+        isEntityCentricExperienceSettingEnabled,
       }}
     >
       {children}
