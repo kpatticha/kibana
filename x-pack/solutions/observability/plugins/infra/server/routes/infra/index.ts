@@ -23,6 +23,8 @@ import { getHosts } from './lib/host/get_hosts';
 import { getHostsCount } from './lib/host/get_hosts_count';
 import { getInfraMetricsClient } from '../../lib/helpers/get_infra_metrics_client';
 import { getApmDataAccessClient } from '../../lib/helpers/get_apm_data_access_client';
+import { getObserabilityEsClient } from '../../lib/helpers/get_es_observability_client';
+import { getHostsCountWithEsql } from './lib/host/get_hosts_count_with_esql';
 
 export const initInfraAssetRoutes = (libs: InfraBackendLibs) => {
   const { framework } = libs;
@@ -99,23 +101,42 @@ export const initInfraAssetRoutes = (libs: InfraBackendLibs) => {
         const apmDataAccessClient = getApmDataAccessClient({ request, libs, context });
         const hasApmPrivileges = await apmDataAccessClient.hasPrivileges();
 
-        const [infraMetricsClient, apmDataAccessServices] = await Promise.all([
+        const [infraMetricsClient, apmDataAccessServices, obsEsClient] = await Promise.all([
           getInfraMetricsClient({ request, libs, context }),
           hasApmPrivileges ? apmDataAccessClient.getServices() : undefined,
+          getObserabilityEsClient({ libs, context, request }),
         ]);
 
-        const count = await getHostsCount({
-          infraMetricsClient,
+        // const t0 = performance.now();
+        // const count = await getHostsCount({
+        //   infraMetricsClient,
+        //   apmDataAccessServices,
+        //   query,
+        //   from,
+        //   to,
+        // });
+        // const t1 = performance.now();
+
+        // console.log(`Call to getHostsCount took ${t1 - t0} milliseconds.`);
+
+        // const t0_esql = performance.now();
+        const countEsql = await getHostsCountWithEsql({
+          obsEsClient,
           apmDataAccessServices,
           query,
           from,
           to,
         });
+        // const t1_esql = performance.now();
+        // console.log(`Call to getHostsCountWithEsql took ${t1_esql - t0_esql} milliseconds.`);
+
+        // console.log('COUNT ESQL', countEsql);
+        // console.log('COUNT ', count);
 
         return response.ok({
           body: GetInfraAssetCountResponsePayloadRT.encode({
             assetType,
-            count,
+            count: countEsql,
           }),
         });
       } catch (err) {

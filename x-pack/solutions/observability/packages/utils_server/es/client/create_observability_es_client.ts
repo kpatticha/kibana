@@ -158,6 +158,7 @@ export function createObservabilityEsClient({
       options?: EsqlOptions
     ): Promise<InferEsqlResponseOf<EsqlOutput, EsqlOptions>> {
       return callWithLogger(operationName, parameters, () => {
+        // console.log('parameters', JSON.stringify(parameters));
         return client.esql
           .query(
             { ...parameters },

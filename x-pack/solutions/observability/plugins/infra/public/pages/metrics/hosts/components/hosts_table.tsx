@@ -42,7 +42,7 @@ export const HostsTable = () => {
   } = useHostsTableContext();
 
   useEffect(() => {
-    if (!loading && !hostCountLoading) {
+    if (!hostCountLoading) {
       onPageReady({
         meta: {
           rangeFrom: searchCriteria.dateRange.from,
