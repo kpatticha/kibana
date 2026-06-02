@@ -13,11 +13,16 @@ import { Parser } from '@elastic/esql';
 import { METRICS_EXPERIENCE_PRODUCT_FEATURE_ID } from '../../../../../common/constants';
 import type { DataSourceProfileProvider } from '../../../profiles';
 import { DataSourceCategory, SolutionType } from '../../../profiles';
+import { METRICS_STATE_DEF } from '../../../profile_state';
+import type { MetricsState } from '../../../profile_state';
 import { createChartSection } from './accessor/chart_section';
 import { getDefaultAppState } from './accessor/get_default_app_state';
 import { getDeepAnalysisPlaybook } from './accessor/get_deep_analysis_playbook';
 
-export type MetricsExperienceDataSourceProfileProvider = DataSourceProfileProvider<{}>;
+export type MetricsExperienceDataSourceProfileProvider = DataSourceProfileProvider<
+  {},
+  MetricsState
+>;
 
 export const METRICS_DATA_SOURCE_PROFILE_ID = 'metrics-data-source-profile';
 // FIXME: could kbn-esql-language provide a union type with existing commands?
@@ -40,6 +45,7 @@ export const createMetricsDataSourceProfileProvider =
         isMatch: true,
         context: {
           category: DataSourceCategory.Metrics,
+          profileState: METRICS_STATE_DEF,
         },
       };
     },

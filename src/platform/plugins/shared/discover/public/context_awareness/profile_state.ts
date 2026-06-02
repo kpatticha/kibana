@@ -106,6 +106,28 @@ export class ProfileStateRegistry {
 
 export const registerProfileStateDefinitions = (registry: ProfileStateRegistry) => {
   registry.registerDefinition(COLOR_STATE_DEF);
+  registry.registerDefinition(METRICS_STATE_DEF);
+};
+
+export interface MetricsState {
+  /**
+   * Current search term used to filter the metrics grid by metric name.
+   * Synced to the URL so a shared link reproduces the filtered view.
+   */
+  searchText: string;
+  /**
+   * Whether the metrics grid is displayed in full-screen mode.
+   * Ui-only — transient, not persisted to the URL or local storage.
+   */
+  fullScreen: boolean;
+}
+
+export const METRICS_STATE_DEF: ProfileStateDefinition<MetricsState> = {
+  key: 'metricsState',
+  descriptor: {
+    searchText: { type: ProfileStateType.Url },
+    fullScreen: { type: ProfileStateType.Persistent },
+  },
 };
 
 export interface ColorState {

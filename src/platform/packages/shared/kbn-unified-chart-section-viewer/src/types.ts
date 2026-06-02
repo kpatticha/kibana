@@ -42,6 +42,27 @@ export interface UnifiedMetricsGridProps extends ChartSectionProps {
    * cross-plugin features such as the Streams flyout field section and ErrorCallout.
    */
   externalServices?: ExternalServices;
+  /**
+   * Controlled search term for filtering metrics by name.
+   * When provided, overrides the grid's internal restorable-state value.
+   * The host is responsible for persisting this value (e.g. via profile state).
+   */
+  searchTerm?: string;
+  /**
+   * Callback invoked when the user changes the search term.
+   * Required when `searchTerm` is provided (controlled mode).
+   */
+  onSearchTermChange?: (value: string) => void;
+  /**
+   * Controlled fullscreen state.
+   * When provided, overrides the grid's internal restorable-state value.
+   */
+  isFullscreen?: boolean;
+  /**
+   * Callback invoked when the user toggles fullscreen.
+   * Required when `isFullscreen` is provided (controlled mode).
+   */
+  onToggleFullscreen?: () => void;
 }
 
 export interface Dimension {

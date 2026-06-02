@@ -33,15 +33,30 @@ export const MetricsExperienceStateContext =
 export function MetricsExperienceStateProvider({
   children,
   profileId,
+  searchTerm: controlledSearchTerm,
+  onSearchTermChange: onControlledSearchTermChange,
+  isFullscreen: controlledIsFullscreen,
+  onToggleFullscreen: onControlledToggleFullscreen,
 }: {
   children: React.ReactNode;
   profileId: string;
+  /** When provided, overrides the internal restorable-state value (controlled mode). */
+  searchTerm?: string;
+  onSearchTermChange?: (value: string) => void;
+  /** When provided, overrides the internal restorable-state value (controlled mode). */
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }) {
   const [currentPage, setCurrentPage] = useRestorableState('currentPage', 0);
   const [selectedDimensions, setSelectedDimensions] = useRestorableState('selectedDimensions', []);
-  const [searchTerm, setSearchTerm] = useRestorableState('searchTerm', '');
-  const [isFullscreen, setIsFullscreen] = useRestorableState('isFullscreen', false);
+  const [internalSearchTerm, setInternalSearchTerm] = useRestorableState('searchTerm', '');
+  const [internalIsFullscreen, setInternalIsFullscreen] = useRestorableState('isFullscreen', false);
   const [flyoutState, setFlyoutState] = useRestorableState('flyoutState', undefined);
+
+  // Prefer controlled values when provided; fall back to internal restorable state.
+  const searchTerm = controlledSearchTerm !== undefined ? controlledSearchTerm : internalSearchTerm;
+  const isFullscreen =
+    controlledIsFullscreen !== undefined ? controlledIsFullscreen : internalIsFullscreen;
 
   const onDimensionsChange = useCallback(
     (nextDimensions: Dimension[]) => {
@@ -59,19 +74,31 @@ export function MetricsExperienceStateProvider({
 
   const onSearchTermChange = useCallback(
     (term: string) => {
-      setSearchTerm((prevTerm) => {
-        if (prevTerm !== term) {
+      if (onControlledSearchTermChange) {
+        // Controlled mode: delegate to the host; still reset the page locally.
+        if (term !== searchTerm) {
           setCurrentPage(0);
         }
-        return term;
-      });
+        onControlledSearchTermChange(term);
+      } else {
+        setInternalSearchTerm((prevTerm) => {
+          if (prevTerm !== term) {
+            setCurrentPage(0);
+          }
+          return term;
+        });
+      }
     },
-    [setSearchTerm, setCurrentPage]
+    [onControlledSearchTermChange, searchTerm, setInternalSearchTerm, setCurrentPage]
   );
 
   const onToggleFullscreen = useCallback(() => {
-    setIsFullscreen((prev) => !prev);
-  }, [setIsFullscreen]);
+    if (onControlledToggleFullscreen) {
+      onControlledToggleFullscreen();
+    } else {
+      setInternalIsFullscreen((prev) => !prev);
+    }
+  }, [onControlledToggleFullscreen, setInternalIsFullscreen]);
 
   const onFlyoutStateChange = useCallback(
     (nextFlyoutState: FlyoutState | undefined) => {
