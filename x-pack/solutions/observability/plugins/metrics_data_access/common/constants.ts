@@ -28,5 +28,6 @@ export const OS_TYPE = 'os.type';
 
 // integrations
 export const SYSTEM_INTEGRATION = 'system';
+export const KUBERNETES_INTEGRATION = 'kubernetes';
 export const HOST_METRICS_RECEIVER_OTEL = 'hostmetricsreceiver.otel';
 export const KUBELET_STATS_RECEIVER_OTEL = 'kubeletstatsreceiver.otel';
