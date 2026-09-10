@@ -35,7 +35,7 @@ export const initNodeDetailsRoute = (libs: InfraBackendLibs) => {
     },
     async (requestContext, request, response) => {
       try {
-        const { nodeId, cloudId, nodeType, metrics, timerange, sourceId } = pipe(
+        const { nodeId, cloudId, nodeType, metrics, timerange, sourceId, schema } = pipe(
           NodeDetailsRequestRT.decode(request.body),
           fold(throwErrors(Boom.badRequest), identity)
         );
@@ -53,6 +53,7 @@ export const initNodeDetailsRoute = (libs: InfraBackendLibs) => {
           sourceConfiguration: source.configuration,
           metrics,
           timerange,
+          schema,
         };
         return response.ok({
           body: NodeDetailsMetricDataResponseRT.encode({

@@ -125,7 +125,12 @@ export class KibanaMetricsAdapter implements InfraMetricsAdapter {
       max: options.timerange.to,
     };
 
-    const model = createTSVBModel(TIMESTAMP_FIELD, indexPattern, options.timerange.interval);
+    const model = createTSVBModel(
+      TIMESTAMP_FIELD,
+      indexPattern,
+      options.timerange.interval,
+      options.schema
+    );
 
     const client = <Hit = {}, Aggregation = undefined>(
       opts: CallWithRequestParams
