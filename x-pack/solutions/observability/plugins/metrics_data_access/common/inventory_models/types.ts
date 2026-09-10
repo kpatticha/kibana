@@ -224,7 +224,8 @@ export type TSVBMetricModel = rt.TypeOf<typeof TSVBMetricModelRT>;
 export type TSVBMetricModelCreator = (
   timeField: string,
   indexPattern: string | string[],
-  interval: string
+  interval: string,
+  schema?: DataSchemaFormat
 ) => TSVBMetricModel;
 
 export type MetricsUIAggregation = Record<string, estypes.AggregationsAggregate>;
