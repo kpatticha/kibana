@@ -134,11 +134,13 @@ export const SchemaSelector = ({
   schemas,
   value,
   isLoading,
+  helpText,
 }: {
   onChange: (selected: DataSchemaFormat) => void;
   schemas: DataSchemaFormat[];
   value: DataSchemaFormat;
   isLoading: boolean;
+  helpText?: string;
 }) => {
   const {
     services: { telemetry },
@@ -213,9 +215,10 @@ export const SchemaSelector = ({
       css={{ minWidth: '300px' }}
       helpText={
         (options.length > 1 || (options.length === 1 && isInvalid)) &&
-        i18n.translate('xpack.infra.schemaSelector.select.helpText', {
-          defaultMessage: 'There are hosts available in another schema',
-        })
+        (helpText ??
+          i18n.translate('xpack.infra.schemaSelector.select.helpText', {
+            defaultMessage: 'There are hosts available in another schema',
+          }))
       }
     >
       <EuiSuperSelect

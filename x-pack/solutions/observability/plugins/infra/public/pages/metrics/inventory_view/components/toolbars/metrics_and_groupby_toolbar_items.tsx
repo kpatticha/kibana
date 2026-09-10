@@ -7,8 +7,12 @@
 
 import { EuiFlexItem } from '@elastic/eui';
 import React, { useEffect, useMemo } from 'react';
-import type { SnapshotMetricType } from '@kbn/metrics-data-access-plugin/common';
-import type { DataSchemaFormat } from '@kbn/metrics-data-access-plugin/common';
+import { i18n } from '@kbn/i18n';
+import type {
+  DataSchemaFormat,
+  InventoryItemType,
+  SnapshotMetricType,
+} from '@kbn/metrics-data-access-plugin/common';
 import { findInventoryModel } from '@kbn/metrics-data-access-plugin/common';
 import useAsync from 'react-use/lib/useAsync';
 import { DEFAULT_SCHEMA } from '../../../../../../common/constants';
@@ -25,6 +29,15 @@ interface Props extends ToolbarProps {
   groupByFields: string[];
   allowSchemaSelection?: boolean;
 }
+
+const SCHEMA_HELP_TEXT_BY_NODE_TYPE: Partial<Record<InventoryItemType, string>> = {
+  host: i18n.translate('xpack.infra.schemaSelector.select.hostsHelpText', {
+    defaultMessage: 'There are hosts available in another schema',
+  }),
+  pod: i18n.translate('xpack.infra.schemaSelector.select.podsHelpText', {
+    defaultMessage: 'There are pods available in another schema',
+  }),
+};
 
 export const MetricsAndGroupByToolbarItems = ({
   preferredSchema,
@@ -109,6 +122,7 @@ export const MetricsAndGroupByToolbarItems = ({
             schemas={schemas}
             isLoading={loading}
             onChange={changePreferredSchema}
+            helpText={SCHEMA_HELP_TEXT_BY_NODE_TYPE[props.nodeType]}
           />
         </EuiFlexItem>
       )}
