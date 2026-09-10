@@ -5,5 +5,17 @@
  * 2.0.
  */
 
-import { networkTraffic } from '../../../../shared/metrics/snapshot/network_traffic';
-export const rx = networkTraffic('rx', 'kubernetes.pod.network.rx.bytes');
+import type { SchemaBasedAggregations } from '../../../../shared/metrics/types';
+import {
+  networkTraffic,
+  networkTrafficWithInterfacesWithFilter,
+} from '../../../../shared/metrics/snapshot/network_traffic';
+
+export const rx: SchemaBasedAggregations = {
+  ecs: networkTraffic('rx', 'kubernetes.pod.network.rx.bytes'),
+  semconv: networkTrafficWithInterfacesWithFilter('rx', 'metrics.k8s.pod.network.io', 'interface', {
+    term: {
+      direction: 'receive',
+    },
+  }),
+};

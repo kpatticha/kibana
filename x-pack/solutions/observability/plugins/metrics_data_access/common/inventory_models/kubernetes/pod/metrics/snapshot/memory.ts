@@ -5,30 +5,57 @@
  * 2.0.
  */
 
-import type { MetricsUIAggregation } from '../../../../types';
+import type { SchemaBasedAggregations } from '../../../../shared/metrics/types';
 
-export const memory: MetricsUIAggregation = {
-  memory_with_limit: {
-    avg: {
-      field: 'kubernetes.pod.memory.usage.limit.pct',
+export const memory: SchemaBasedAggregations = {
+  ecs: {
+    memory_with_limit: {
+      avg: {
+        field: 'kubernetes.pod.memory.usage.limit.pct',
+      },
+    },
+    memory_without_limit: {
+      avg: {
+        field: 'kubernetes.pod.memory.usage.node.pct',
+      },
+    },
+    memory: {
+      bucket_script: {
+        buckets_path: {
+          with_limit: 'memory_with_limit',
+          without_limit: 'memory_without_limit',
+        },
+        script: {
+          source: 'params.with_limit > 0.0 ? params.with_limit : params.without_limit',
+          lang: 'painless',
+        },
+        gap_policy: 'skip',
+      },
     },
   },
-  memory_without_limit: {
-    avg: {
-      field: 'kubernetes.pod.memory.usage.node.pct',
+  semconv: {
+    memory_with_limit: {
+      avg: {
+        field: 'metrics.k8s.pod.memory_limit_utilization',
+      },
     },
-  },
-  memory: {
-    bucket_script: {
-      buckets_path: {
-        with_limit: 'memory_with_limit',
-        without_limit: 'memory_without_limit',
+    memory_without_limit: {
+      avg: {
+        field: 'metrics.k8s.pod.memory.node.utilization',
       },
-      script: {
-        source: 'params.with_limit > 0.0 ? params.with_limit : params.without_limit',
-        lang: 'painless',
+    },
+    memory: {
+      bucket_script: {
+        buckets_path: {
+          with_limit: 'memory_with_limit',
+          without_limit: 'memory_without_limit',
+        },
+        script: {
+          source: 'params.with_limit > 0.0 ? params.with_limit : params.without_limit',
+          lang: 'painless',
+        },
+        gap_policy: 'skip',
       },
-      gap_policy: 'skip',
     },
   },
 };

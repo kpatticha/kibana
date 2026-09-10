@@ -5,30 +5,58 @@
  * 2.0.
  */
 
-import type { MetricsUIAggregation } from '../../../../types';
+import type { SchemaBasedAggregations } from '../../../../shared/metrics/types';
 
-export const cpu: MetricsUIAggregation = {
-  cpu_with_limit: {
-    avg: {
-      field: 'kubernetes.pod.cpu.usage.limit.pct',
+export const cpu: SchemaBasedAggregations = {
+  ecs: {
+    cpu_with_limit: {
+      avg: {
+        field: 'kubernetes.pod.cpu.usage.limit.pct',
+      },
+    },
+    cpu_without_limit: {
+      avg: {
+        field: 'kubernetes.pod.cpu.usage.node.pct',
+      },
+    },
+    cpu: {
+      bucket_script: {
+        buckets_path: {
+          with_limit: 'cpu_with_limit',
+          without_limit: 'cpu_without_limit',
+        },
+        script: {
+          source: 'params.with_limit > 0.0 ? params.with_limit : params.without_limit',
+          lang: 'painless',
+        },
+        gap_policy: 'insert_zeros',
+      },
     },
   },
-  cpu_without_limit: {
-    avg: {
-      field: 'kubernetes.pod.cpu.usage.node.pct',
+  semconv: {
+    cpu_with_limit: {
+      avg: {
+        // Kubeletstats only reports limit utilization when the pod defines a CPU limit.
+        field: 'metrics.k8s.pod.cpu_limit_utilization',
+      },
     },
-  },
-  cpu: {
-    bucket_script: {
-      buckets_path: {
-        with_limit: 'cpu_with_limit',
-        without_limit: 'cpu_without_limit',
+    cpu_without_limit: {
+      avg: {
+        field: 'metrics.k8s.pod.cpu.node.utilization',
       },
-      script: {
-        source: 'params.with_limit > 0.0 ? params.with_limit : params.without_limit',
-        lang: 'painless',
+    },
+    cpu: {
+      bucket_script: {
+        buckets_path: {
+          with_limit: 'cpu_with_limit',
+          without_limit: 'cpu_without_limit',
+        },
+        script: {
+          source: 'params.with_limit > 0.0 ? params.with_limit : params.without_limit',
+          lang: 'painless',
+        },
+        gap_policy: 'insert_zeros',
       },
-      gap_policy: 'insert_zeros',
     },
   },
 };
