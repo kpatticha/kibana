@@ -59,7 +59,7 @@ export const DEFAULT_WAFFLE_OPTIONS_STATE: WaffleOptionsState = {
   preferredSchema: null,
 };
 
-function mapInventoryViewToState(savedView: InventoryView): WaffleOptionsState {
+export function mapInventoryViewToState(savedView: InventoryView): WaffleOptionsState {
   const {
     metric,
     groupBy,
@@ -79,7 +79,7 @@ function mapInventoryViewToState(savedView: InventoryView): WaffleOptionsState {
 
   // forces the default view to be set with what the time range metadata endpoint returns
   const preferredSchemaValue =
-    nodeType === 'host' && savedView.id === staticInventoryViewId
+    (nodeType === 'host' || nodeType === 'pod') && savedView.id === staticInventoryViewId
       ? preferredSchema ?? null
       : // otherwise, use the preferred schema from the saved view
         preferredSchema;

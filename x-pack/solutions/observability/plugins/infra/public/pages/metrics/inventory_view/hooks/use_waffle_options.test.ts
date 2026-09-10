@@ -7,9 +7,11 @@
 
 import { renderHook, act } from '@testing-library/react';
 import type { WaffleOptionsState } from './use_waffle_options';
-import { useWaffleOptions } from './use_waffle_options';
+import { useWaffleOptions, mapInventoryViewToState } from './use_waffle_options';
 import { useUrlState } from '@kbn/observability-shared-plugin/public';
 import { useAlertPrefillContext } from '../../../../alerting/use_alert_prefill';
+import { staticInventoryViewId } from '../../../../../common/inventory_views';
+import type { InventoryView } from '../../../../../common/inventory_views/types';
 
 jest.mock('@kbn/observability-shared-plugin/public');
 jest.mock('../../../../alerting/use_alert_prefill');
@@ -114,5 +116,44 @@ describe('useWaffleOptions', () => {
     expect(setPrefillState).toHaveBeenCalledWith(
       expect.objectContaining({ region: newOptions.region })
     );
+  });
+});
+
+describe('mapInventoryViewToState preferredSchema', () => {
+  const buildView = (overrides: Record<string, unknown>): InventoryView =>
+    ({
+      id: staticInventoryViewId,
+      attributes: {
+        metric: { type: 'cpu' },
+        groupBy: [],
+        nodeType: 'pod',
+        view: 'map',
+        customOptions: [],
+        autoBounds: true,
+        boundsOverride: { max: 1, min: 0 },
+        accountId: '',
+        region: '',
+        customMetrics: [],
+        legend: undefined,
+        sort: { by: 'name', direction: 'desc' },
+        timelineOpen: false,
+        ...overrides,
+      },
+    } as unknown as InventoryView);
+
+  it('resets preferredSchema to null for the static view on pod', () => {
+    const state = mapInventoryViewToState(buildView({ nodeType: 'pod' }));
+    expect(state.preferredSchema).toBeNull();
+  });
+
+  it('resets preferredSchema to null for the static view on host', () => {
+    const state = mapInventoryViewToState(buildView({ nodeType: 'host' }));
+    expect(state.preferredSchema).toBeNull();
+  });
+
+  it('keeps the saved preferredSchema for non-static saved views', () => {
+    const view = buildView({ nodeType: 'pod', preferredSchema: 'semconv' });
+    const state = mapInventoryViewToState({ ...view, id: 'my-saved-view' } as InventoryView);
+    expect(state.preferredSchema).toBe('semconv');
   });
 });
