@@ -17,6 +17,7 @@ import type { KibanaFramework } from '../../../lib/adapters/framework/kibana_fra
 import type { InfraSourceConfiguration } from '../../../lib/sources';
 import { TIMESTAMP_FIELD } from '../../../../common/constants';
 import { getHasDataFromSystemIntegration } from '../../infra/lib/host/get_filtered_hosts';
+import { mergeOtelDatasetFeatures } from './otel_dataset_feature_mapping';
 
 export interface InfraMetricsAdapterResponse {
   id: string;
@@ -73,6 +74,12 @@ export const getMetricMetadata = async (
             size: 1000,
           },
         },
+        otelMetrics: {
+          terms: {
+            field: 'data_stream.dataset',
+            size: 1000,
+          },
+        },
       },
     },
   };
@@ -82,13 +89,16 @@ export const getMetricMetadata = async (
     {
       metrics?: InfraMetadataAggregationResponse;
       nodeName?: InfraMetadataAggregationResponse;
+      otelMetrics?: InfraMetadataAggregationResponse;
     }
   >(requestContext, 'search', metricQuery);
 
-  const buckets =
+  const eventDatasetBuckets =
     response.aggregations && response.aggregations.metrics
       ? response.aggregations.metrics.buckets
       : [];
+  const otelDatasetBuckets = response.aggregations?.otelMetrics?.buckets ?? [];
+  const buckets = mergeOtelDatasetFeatures(eventDatasetBuckets, otelDatasetBuckets);
 
   const res = {
     id: nodeId,
