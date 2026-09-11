@@ -20,6 +20,8 @@ export type AssetDetailsLocator = LocatorPublic<AssetDetailsLocatorParams>;
 export interface AssetDetailsLocatorParams extends SerializableRecord {
   entityType: string;
   entityId: string;
+  // Schema for entity types still rendered by the legacy node details page
+  schema?: DataSchemaFormat;
   // asset types not migrated to use the asset details page
   _a?: {
     time?: {
@@ -89,6 +91,9 @@ export class AssetDetailsLocatorDefinition implements LocatorDefinition<AssetDet
     }
     if (legacyNodeDetailsQueryParams !== undefined) {
       queryParams.push(`_a=${legacyNodeDetailsQueryParams}`);
+    }
+    if (!isSupportedByAssetDetails && params.schema !== undefined) {
+      queryParams.push(`schema=${params.schema}`);
     }
 
     return {

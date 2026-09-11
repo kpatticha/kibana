@@ -106,6 +106,7 @@ export const NodeContextMenu = withEuiTheme(
         to: currentTime,
         name: node.name,
       },
+      preferredSchema: preferredSchema ?? undefined,
     });
 
     const apmTracesMenuItemLinkProps = useLinkProps({

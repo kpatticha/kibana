@@ -77,11 +77,13 @@ export const RedirectToNodeDetail = () => {
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const search = getSearchParams(nodeType, queryParams);
+    const schemaParam = queryParams.get('schema');
 
     baseLocator?.navigate({
       ...search,
       entityType: nodeType,
       entityId: nodeId,
+      ...(schemaParam === 'ecs' || schemaParam === 'semconv' ? { schema: schemaParam } : {}),
       state: location.state as SerializableRecord,
     });
   }, [baseLocator, location.search, location.state, nodeId, nodeType]);

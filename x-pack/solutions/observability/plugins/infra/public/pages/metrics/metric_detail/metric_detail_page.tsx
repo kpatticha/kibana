@@ -6,10 +6,10 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import React, { useState } from 'react';
-import { useRouteMatch } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { useLocation, useRouteMatch } from 'react-router-dom';
 import { findInventoryModel } from '@kbn/metrics-data-access-plugin/common';
-import type { InventoryItemType } from '@kbn/metrics-data-access-plugin/common';
+import type { InventoryItemType, DataSchemaFormat } from '@kbn/metrics-data-access-plugin/common';
 import { OnboardingFlow } from '../../../components/shared/templates/no_data_config';
 import { InfraPageTemplate } from '../../../components/shared/templates/infra_page_template';
 import { useMetricsBreadcrumbs } from '../../../hooks/use_metrics_breadcrumbs';
@@ -28,6 +28,11 @@ export const MetricDetailPage = () => {
   const inventoryModel = findInventoryModel(nodeType);
   const { sourceId } = useSourceContext();
   const parentBreadcrumbResolver = useParentBreadcrumbResolver();
+  const location = useLocation();
+  const schema: DataSchemaFormat = useMemo(() => {
+    const schemaParam = new URLSearchParams(location.search).get('schema');
+    return schemaParam === 'semconv' ? 'semconv' : 'ecs';
+  }, [location.search]);
 
   const {
     timeRange,
@@ -113,6 +118,7 @@ export const MetricDetailPage = () => {
           setAutoReload={setAutoReload}
           triggerRefresh={triggerRefresh}
           setTimeRange={setTimeRange}
+          schema={schema}
         />
       ) : null}
     </>

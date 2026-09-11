@@ -96,6 +96,27 @@ describe('Infra Locators', () => {
       expect(state).toBeDefined();
       expect(Object.keys(state)).toHaveLength(0);
     });
+
+    it('should include the schema param for legacy entity types when provided', async () => {
+      const { assetDetailsLocator } = await setupAssetDetailsLocator();
+      const location = await assetDetailsLocator.getLocation({
+        entityType: 'pod',
+        entityId: 'pod-01',
+        schema: 'semconv',
+        assetDetails: {},
+      });
+      expect(location.path).toContain('schema=semconv');
+    });
+
+    it('should not include the schema param when not provided', async () => {
+      const { assetDetailsLocator } = await setupAssetDetailsLocator();
+      const location = await assetDetailsLocator.getLocation({
+        entityType: 'pod',
+        entityId: 'pod-01',
+        assetDetails: {},
+      });
+      expect(location.path).not.toContain('schema=');
+    });
   });
 
   describe('Asset Details Flyout Locator', () => {

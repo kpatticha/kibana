@@ -74,6 +74,7 @@ export const useAssetDetailsRedirect = () => {
         ...queryParams,
         entityType,
         entityId,
+        ...(preferredSchema !== undefined ? { schema: preferredSchema } : {}),
         state: {
           ...(location.state ?? {}),
           ...(location.key
