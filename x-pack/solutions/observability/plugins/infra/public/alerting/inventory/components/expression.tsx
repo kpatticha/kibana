@@ -249,7 +249,9 @@ export const Expressions: React.FC<ExpressionsProps> = (props) => {
 
   useEffect(() => {
     const md = metadata;
-    const isHost = ruleParams.nodeType === 'host' || (md && md.nodeType === 'host');
+    const isSchemaSupportedNodeType = [ruleParams.nodeType, md?.nodeType].some(
+      (nodeType) => nodeType === 'host' || nodeType === 'pod'
+    );
 
     if (!ruleParams.nodeType) {
       if (md && md.nodeType) {
@@ -260,7 +262,7 @@ export const Expressions: React.FC<ExpressionsProps> = (props) => {
     }
 
     if (!ruleParams.schema) {
-      if (md && md.schema && isHost) {
+      if (md && md.schema && isSchemaSupportedNodeType) {
         setRuleParams('schema', md.schema);
       }
     }
@@ -323,7 +325,7 @@ export const Expressions: React.FC<ExpressionsProps> = (props) => {
           <SupportedDataTooltipLink nodeType={ruleParams.nodeType} isAlertUI />
         </EuiFlexGroup>
       </div>
-      {ruleParams.nodeType === 'host' && (
+      {(ruleParams.nodeType === 'host' || ruleParams.nodeType === 'pod') && (
         <div css={StyledExpressionCss}>
           <EuiFlexGroup css={StyledExpressionRowCss} gutterSize="xs">
             <div css={NonCollapsibleExpressionCss}>
@@ -343,7 +345,7 @@ export const Expressions: React.FC<ExpressionsProps> = (props) => {
                     defaultMessage: 'Schema',
                   }
                 )}
-                data-test-subj="forExpressionSelect"
+                data-test-subj="schemaExpressionSelect"
                 aria-label={i18n.translate(
                   'xpack.infra.metrics.alertFlyout.expression.for.ariaLabel',
                   {

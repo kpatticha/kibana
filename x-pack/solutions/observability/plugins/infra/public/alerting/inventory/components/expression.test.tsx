@@ -74,11 +74,15 @@ const exampleCustomMetric = {
 const dataViewMock = dataViewPluginMocks.createStartContract();
 
 describe('Expression', () => {
-  async function setup(currentOptions: AlertContextMeta) {
+  async function setup(
+    currentOptions: AlertContextMeta,
+    initialRuleParams: Record<string, unknown> = {}
+  ) {
     const ruleParams = {
       criteria: [],
       nodeType: undefined,
       filterQueryText: '',
+      ...initialRuleParams,
     };
     const wrapper = mountWithIntl(
       <Expressions
@@ -161,6 +165,37 @@ describe('Expression', () => {
     const chart = wrapper.find('[data-test-subj="preview-chart"]');
 
     expect(chart.prop('kuery')).toBe(ruleParams.filterQueryText);
+  });
+
+  describe('schema selection', () => {
+    it('shows the schema dropdown for the host node type', async () => {
+      const { wrapper } = await setup({} as AlertContextMeta, { nodeType: 'host' });
+      expect(wrapper.find('[data-test-subj="schemaExpressionSelect"]').exists()).toBe(true);
+    });
+
+    it('shows the schema dropdown for the pod node type', async () => {
+      const { wrapper } = await setup({} as AlertContextMeta, { nodeType: 'pod' });
+      expect(wrapper.find('[data-test-subj="schemaExpressionSelect"]').exists()).toBe(true);
+    });
+
+    it('hides the schema dropdown for unsupported node types', async () => {
+      const { wrapper } = await setup({} as AlertContextMeta, { nodeType: 'awsEC2' });
+      expect(wrapper.find('[data-test-subj="schemaExpressionSelect"]').exists()).toBe(false);
+    });
+
+    it('prefills the schema from the inventory metadata for pods', async () => {
+      const currentOptions = {
+        filter: '',
+        nodeType: 'pod',
+        schema: 'semconv',
+        customMetrics: [],
+        options: { metric: { type: 'memory' } },
+      };
+      const { ruleParams } = (await setup(currentOptions as AlertContextMeta)) as {
+        ruleParams: Record<string, unknown>;
+      };
+      expect(ruleParams.schema).toBe('semconv');
+    });
   });
 
   describe('using custom metrics', () => {
