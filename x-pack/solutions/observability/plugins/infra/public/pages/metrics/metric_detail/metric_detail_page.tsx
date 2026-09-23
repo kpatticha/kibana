@@ -9,12 +9,7 @@ import { i18n } from '@kbn/i18n';
 import React, { useMemo, useState } from 'react';
 import { useLocation, useRouteMatch } from 'react-router-dom';
 import { findInventoryModel } from '@kbn/metrics-data-access-plugin/common';
-<<<<<<< HEAD
 import type { InventoryItemType, DataSchemaFormat } from '@kbn/metrics-data-access-plugin/common';
-import { OnboardingFlow } from '../../../components/shared/templates/no_data_config';
-=======
-import type { InventoryItemType } from '@kbn/metrics-data-access-plugin/common';
->>>>>>> fdcca1256843e609562ea0006eba5962834e4f6f
 import { InfraPageTemplate } from '../../../components/shared/templates/infra_page_template';
 import { useMetricsBreadcrumbs } from '../../../hooks/use_metrics_breadcrumbs';
 import { useParentBreadcrumbResolver } from '../../../hooks/use_parent_breadcrumb_resolver';
