@@ -28,6 +28,7 @@ import type {
   ONBOARDING_APP_ID,
   NIGHTSHIFT_APP_ID,
   OBSERVABILITY_ALERTING_APP_ID,
+  INFRASTRUCTURE_ENTITIES_APP_ID,
 } from './constants';
 
 type LogsApp = typeof LOGS_APP_ID;
@@ -50,6 +51,7 @@ type IngestHubApp = typeof INGEST_HUB_APP_ID;
 type OnboardingApp = typeof ONBOARDING_APP_ID;
 type NightshiftApp = typeof NIGHTSHIFT_APP_ID;
 type ObservabilityAlertingApp = typeof OBSERVABILITY_ALERTING_APP_ID;
+type InfrastructureEntitiesApp = typeof INFRASTRUCTURE_ENTITIES_APP_ID;
 
 export type AppId =
   | LogsApp
@@ -71,7 +73,8 @@ export type AppId =
   | IngestHubApp
   | OnboardingApp
   | NightshiftApp
-  | ObservabilityAlertingApp;
+  | ObservabilityAlertingApp
+  | InfrastructureEntitiesApp;
 
 export type LogsLinkId = 'log-categories' | 'settings' | 'anomalies' | 'stream';
 

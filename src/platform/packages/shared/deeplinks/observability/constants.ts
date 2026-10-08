@@ -46,6 +46,10 @@ export const ONBOARDING_APP_ID = 'onboarding';
 
 export const NIGHTSHIFT_APP_ID = 'nightshift';
 
+export const INFRASTRUCTURE_ENTITIES_APP_ID = 'infrastructureEntities';
+export const INFRASTRUCTURE_ENTITIES_APP_ROUTE = 'observability/infrastructure-entities';
+export const INFRASTRUCTURE_ENTITIES_BASE_PATH = `/app/${INFRASTRUCTURE_ENTITIES_APP_ROUTE}`;
+
 export const OBSERVABILITY_ALERTING_APP_ID = 'observabilityAlerting';
 export const OBSERVABILITY_ALERTING_APP_ROUTE = 'observability/alerting';
 export const OBSERVABILITY_ALERTING_BASE_PATH = `/app/${OBSERVABILITY_ALERTING_APP_ROUTE}`;

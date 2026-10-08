@@ -840,6 +840,7 @@
     "@kbn/inference-workflows-plugin": "workspace:*",
     "@kbn/infra-forge": "workspace:*",
     "@kbn/infra-plugin": "workspace:*",
+    "@kbn/infrastructure-entities-plugin": "workspace:*",
     "@kbn/ingest-hub-plugin": "workspace:*",
     "@kbn/ingest-pipeline-json-editor": "workspace:*",
     "@kbn/ingest-pipelines-plugin": "workspace:*",

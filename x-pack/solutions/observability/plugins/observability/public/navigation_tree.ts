@@ -253,6 +253,12 @@ function createNavTree({
                   }
                 ),
               },
+              {
+                link: 'infrastructureEntities',
+                title: i18n.translate('xpack.observability.obltNav.infrastructure.entities', {
+                  defaultMessage: 'Entities',
+                }),
+              },
             ],
           },
           {

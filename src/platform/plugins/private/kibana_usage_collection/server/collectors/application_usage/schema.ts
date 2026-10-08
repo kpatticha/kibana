@@ -162,6 +162,7 @@ export const applicationUsageSchema = {
   integrations: commonSchema,
   ingestHub: commonSchema,
   ingestManager: commonSchema,
+  infrastructureEntities: commonSchema,
   lens: commonSchema,
   maps: commonSchema,
   ml: commonSchema,

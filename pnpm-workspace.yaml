@@ -1564,6 +1564,7 @@ packages:
   - 'x-pack/solutions/observability/plugins/client_apps'
   - 'x-pack/solutions/observability/plugins/exploratory_view'
   - 'x-pack/solutions/observability/plugins/infra'
+  - 'x-pack/solutions/observability/plugins/infrastructure_entities'
   - 'x-pack/solutions/observability/plugins/metrics_data_access'
   - 'x-pack/solutions/observability/plugins/nightshift'
   - 'x-pack/solutions/observability/plugins/nightshift_investigations'

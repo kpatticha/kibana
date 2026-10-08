@@ -220,6 +220,12 @@ export const createNavigationTree = ({
                 }),
               },
               { link: 'metrics:hosts' },
+              {
+                link: 'infrastructureEntities',
+                title: i18n.translate('xpack.serverlessObservability.nav.infrastructureEntities', {
+                  defaultMessage: 'Entities',
+                }),
+              },
               { link: 'metrics:settings', sideNavStatus: 'hidden' },
             ],
           },

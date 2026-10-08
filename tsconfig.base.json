@@ -1645,6 +1645,8 @@
       "@kbn/infra-forge/*": ["./x-pack/platform/packages/private/kbn-infra-forge/*"],
       "@kbn/infra-plugin": ["./x-pack/solutions/observability/plugins/infra"],
       "@kbn/infra-plugin/*": ["./x-pack/solutions/observability/plugins/infra/*"],
+      "@kbn/infrastructure-entities-plugin": ["./x-pack/solutions/observability/plugins/infrastructure_entities"],
+      "@kbn/infrastructure-entities-plugin/*": ["./x-pack/solutions/observability/plugins/infrastructure_entities/*"],
       "@kbn/ingest-hub-plugin": ["./x-pack/platform/plugins/shared/ingest_hub"],
       "@kbn/ingest-hub-plugin/*": ["./x-pack/platform/plugins/shared/ingest_hub/*"],
       "@kbn/ingest-pipeline-json-editor": ["./x-pack/platform/packages/shared/kbn-ingest-pipeline-json-editor"],

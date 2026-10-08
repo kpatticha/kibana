@@ -70,6 +70,7 @@
     "xpack.indexLifecycleMgmt": "platform/plugins/private/index_lifecycle_management",
     "xpack.inferenceEndpointUICommon": "platform/packages/shared/kbn-inference-endpoint-ui-common",
     "xpack.infra": "solutions/observability/plugins/infra",
+    "xpack.infrastructureEntities": "solutions/observability/plugins/infrastructure_entities",
     "xpack.logsDataAccess": "platform/plugins/shared/logs_data_access",
     "xpack.logsShared": "platform/plugins/shared/logs_shared",
     "xpack.fleet": "platform/plugins/shared/fleet",
