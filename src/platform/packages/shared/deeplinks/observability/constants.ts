@@ -49,6 +49,11 @@ export const NIGHTSHIFT_APP_ID = 'nightshift';
 export const INFRASTRUCTURE_ENTITIES_APP_ID = 'infrastructureEntities';
 export const INFRASTRUCTURE_ENTITIES_APP_ROUTE = 'observability/infrastructure-entities';
 export const INFRASTRUCTURE_ENTITIES_BASE_PATH = `/app/${INFRASTRUCTURE_ENTITIES_APP_ROUTE}`;
+/**
+ * Set by the legacy Infrastructure pages when they hand over to the Entities app, so that app can
+ * confirm the switch to the user who made it.
+ */
+export const INFRASTRUCTURE_ENTITIES_SWITCHED_PARAM = 'switched';
 
 export const OBSERVABILITY_ALERTING_APP_ID = 'observabilityAlerting';
 export const OBSERVABILITY_ALERTING_APP_ROUTE = 'observability/alerting';

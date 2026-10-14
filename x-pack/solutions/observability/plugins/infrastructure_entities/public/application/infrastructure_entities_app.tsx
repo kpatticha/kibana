@@ -10,9 +10,11 @@ import { EuiPageSection, EuiSpacer, EuiText, EuiTitle } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { CoreStart } from '@kbn/core/public';
 import { EntitiesTable } from './entities_table';
+import { SwitchSuccessCallout } from './switch_success_callout';
 
 export const InfrastructureEntitiesApp = ({ coreStart }: { coreStart: CoreStart }) => (
   <EuiPageSection restrictWidth={false}>
+    <SwitchSuccessCallout application={coreStart.application} />
     <EuiTitle size="l">
       <h1>
         <FormattedMessage

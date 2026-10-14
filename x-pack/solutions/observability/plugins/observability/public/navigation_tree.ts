@@ -11,7 +11,10 @@ import type { AddSolutionNavigationArg } from '@kbn/navigation-plugin/public';
 import { STACK_MANAGEMENT_NAV_ID, DATA_MANAGEMENT_NAV_ID } from '@kbn/deeplinks-management';
 import { combineLatest, map, of } from 'rxjs';
 import { AIChatExperience } from '@kbn/ai-assistant-common';
-import { AI_CHAT_EXPERIENCE_TYPE } from '@kbn/management-settings-ids';
+import {
+  AI_CHAT_EXPERIENCE_TYPE,
+  OBSERVABILITY_ENABLE_INFRASTRUCTURE_ENTITIES_ID,
+} from '@kbn/management-settings-ids';
 import { getWorkflowsNavPanel } from '@kbn/deeplinks-workflows';
 import { EVALS_APP_ID } from '@kbn/deeplinks-evals';
 import { NIGHTSHIFT_ENABLED_FLAG } from '@kbn/nightshift-shared';
@@ -52,6 +55,7 @@ function createNavTree({
   showAiAssistant,
   isCloudEnabled,
   ingestHubAvailable,
+  infrastructureEntitiesAvailable,
 }: {
   coreStart: CoreStart;
   significantEventsAvailable: boolean;
@@ -59,7 +63,17 @@ function createNavTree({
   showAiAssistant?: boolean;
   isCloudEnabled?: boolean;
   ingestHubAvailable?: boolean;
+  infrastructureEntitiesAvailable?: boolean;
 }) {
+  // The Entities app supersedes the Infrastructure plugin views, so those links drop out of the
+  // side nav while staying routable for existing bookmarks and breadcrumbs.
+  const infraSideNavStatus: 'hidden' | 'visible' = infrastructureEntitiesAvailable
+    ? 'hidden'
+    : 'visible';
+  const entitiesSideNavStatus: 'hidden' | 'visible' = infrastructureEntitiesAvailable
+    ? 'visible'
+    : 'hidden';
+
   const navTree: NavigationTreeDefinition = {
     body: [
       ...(significantEventsAvailable
@@ -220,7 +234,7 @@ function createNavTree({
       },
       {
         id: 'metrics',
-        link: 'metrics:inventory',
+        link: infrastructureEntitiesAvailable ? 'infrastructureEntities' : 'metrics:inventory',
         title: i18n.translate('xpack.observability.obltNav.infrastructure', {
           defaultMessage: 'Infrastructure',
         }),
@@ -231,6 +245,7 @@ function createNavTree({
             children: [
               {
                 link: 'metrics:inventory',
+                sideNavStatus: infraSideNavStatus,
                 title: i18n.translate('xpack.observability.infrastructure.inventory', {
                   defaultMessage: 'Infrastructure inventory',
                 }),
@@ -240,12 +255,14 @@ function createNavTree({
               },
               {
                 link: 'metrics:hosts',
+                sideNavStatus: infraSideNavStatus,
                 getIsActive: ({ pathNameSerialized, prepend }) => {
                   return pathNameSerialized.startsWith(prepend('/app/metrics/hosts'));
                 },
               },
               {
                 link: 'metrics:metrics-explorer',
+                sideNavStatus: infraSideNavStatus,
                 title: i18n.translate(
                   'xpack.observability.obltNav.infrastructure.metricsExplorer',
                   {
@@ -255,6 +272,7 @@ function createNavTree({
               },
               {
                 link: 'infrastructureEntities',
+                sideNavStatus: entitiesSideNavStatus,
                 title: i18n.translate('xpack.observability.obltNav.infrastructure.entities', {
                   defaultMessage: 'Entities',
                 }),
@@ -745,16 +763,29 @@ export const createDefinition = (
       coreStart.settings.client.get$<AIChatExperience>(AI_CHAT_EXPERIENCE_TYPE),
       pluginsStart.ingestHub?.navigationAvailable$ || of(false),
       coreStart.featureFlags.getBooleanValue$(NIGHTSHIFT_ENABLED_FLAG, false),
+      coreStart.settings.client.get$<boolean>(
+        OBSERVABILITY_ENABLE_INFRASTRUCTURE_ENTITIES_ID,
+        false
+      ),
     ]).pipe(
-      map(([{ status }, chatExperience, ingestHubAvailable, significantEventsAvailable]) =>
-        createNavTree({
-          coreStart,
-          significantEventsAvailable,
-          streamsAvailable: status === 'enabled',
-          showAiAssistant: chatExperience !== AIChatExperience.Agent,
-          isCloudEnabled: pluginsStart.cloud?.isCloudEnabled,
+      map(
+        ([
+          { status },
+          chatExperience,
           ingestHubAvailable,
-        })
+          significantEventsAvailable,
+          infrastructureEntitiesEnabled,
+        ]) =>
+          createNavTree({
+            coreStart,
+            significantEventsAvailable,
+            streamsAvailable: status === 'enabled',
+            showAiAssistant: chatExperience !== AIChatExperience.Agent,
+            isCloudEnabled: pluginsStart.cloud?.isCloudEnabled,
+            ingestHubAvailable,
+            infrastructureEntitiesAvailable:
+              Boolean(pluginsStart.infrastructureEntities) && infrastructureEntitiesEnabled,
+          })
       )
     ),
   };

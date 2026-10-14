@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { getInfraDeepLinks } from './plugin';
+import { getInfraDeepLinks, getInfrastructureNavigationEntries } from './plugin';
 
 describe('getInfraDeepLinks', () => {
   it('primary nav links use the shared globalSearch + projectSideNav value', () => {
@@ -24,5 +24,55 @@ describe('getInfraDeepLinks', () => {
   it('settings is globalSearch-only (matches main: searchable, not in any nav)', () => {
     const links = getInfraDeepLinks({ metricsExplorerEnabled: false });
     expect(links.find((l) => l.id === 'settings')?.visibleIn).toEqual(['globalSearch']);
+  });
+});
+
+describe('getInfrastructureNavigationEntries', () => {
+  const getApps = (entries: ReturnType<typeof getInfrastructureNavigationEntries>) =>
+    entries.map(({ app, path }) => `${app}${path}`);
+
+  it('shows the Infrastructure plugin links and Entities together while the setting is off', () => {
+    const entries = getInfrastructureNavigationEntries({
+      metricsExplorerEnabled: true,
+      infrastructureEntitiesEnabled: false,
+      isEntitiesAppAvailable: true,
+    });
+
+    expect(getApps(entries)).toEqual([
+      'metrics/inventory',
+      'metrics/explorer',
+      'metrics/hosts',
+      'infrastructureEntities/',
+    ]);
+  });
+
+  it('drops the Infrastructure plugin links once the setting is on', () => {
+    const entries = getInfrastructureNavigationEntries({
+      metricsExplorerEnabled: true,
+      infrastructureEntitiesEnabled: true,
+      isEntitiesAppAvailable: true,
+    });
+
+    expect(getApps(entries)).toEqual(['infrastructureEntities/']);
+  });
+
+  it('omits Entities when the plugin is not installed', () => {
+    const entries = getInfrastructureNavigationEntries({
+      metricsExplorerEnabled: false,
+      infrastructureEntitiesEnabled: false,
+      isEntitiesAppAvailable: false,
+    });
+
+    expect(getApps(entries)).toEqual(['metrics/inventory', 'metrics/hosts']);
+  });
+
+  it('marks the Entities entry as technical preview', () => {
+    const entries = getInfrastructureNavigationEntries({
+      metricsExplorerEnabled: false,
+      infrastructureEntitiesEnabled: true,
+      isEntitiesAppAvailable: true,
+    });
+
+    expect(entries[0].isTechnicalPreview).toBe(true);
   });
 });

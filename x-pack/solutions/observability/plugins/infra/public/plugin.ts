@@ -35,7 +35,11 @@ import {
 } from '@kbn/observability-shared-plugin/common';
 import type { NavigationEntry } from '@kbn/observability-shared-plugin/public';
 import { ProjectRoutingAccess } from '@kbn/cps-utils';
-import { OBSERVABILITY_LOGS_EXPLORER_APP_ID } from '@kbn/deeplinks-observability/constants';
+import {
+  INFRASTRUCTURE_ENTITIES_APP_ID,
+  OBSERVABILITY_LOGS_EXPLORER_APP_ID,
+} from '@kbn/deeplinks-observability/constants';
+import { enableInfrastructureEntities } from '@kbn/observability-plugin/common';
 import {
   OBSERVABILITY_INFRA_CPS_ENABLED_DEFAULT,
   OBSERVABILITY_INFRA_CPS_ENABLED_FEATURE_FLAG,
@@ -59,6 +63,7 @@ import type {
 } from './types';
 import { getLogsHasDataFetcher, getLogsOverviewDataFetcher } from './utils/logs_overview_fetchers';
 import {
+  entitiesTitle,
   hostsTitle,
   inventoryTitle,
   logsTitle,
@@ -120,6 +125,40 @@ export const getInfraDeepLinks = ({
   ];
 };
 
+/**
+ * Entries for the Infrastructure section of the classic Observability navigation. Classic shows the
+ * Infrastructure plugin links alongside Entities until the Entities experience is enabled.
+ */
+export const getInfrastructureNavigationEntries = ({
+  metricsExplorerEnabled,
+  infrastructureEntitiesEnabled,
+  isEntitiesAppAvailable,
+}: {
+  metricsExplorerEnabled: boolean;
+  infrastructureEntitiesEnabled: boolean;
+  isEntitiesAppAvailable: boolean;
+}): NavigationEntry[] => [
+  ...(infrastructureEntitiesEnabled
+    ? []
+    : [
+        { label: inventoryTitle, app: 'metrics', path: '/inventory' },
+        ...(metricsExplorerEnabled
+          ? [{ label: metricsExplorerTitle, app: 'metrics', path: '/explorer' }]
+          : []),
+        { label: hostsTitle, app: 'metrics', path: '/hosts' },
+      ]),
+  ...(isEntitiesAppAvailable
+    ? [
+        {
+          label: entitiesTitle,
+          app: INFRASTRUCTURE_ENTITIES_APP_ID,
+          path: '/',
+          isTechnicalPreview: true,
+        },
+      ]
+    : []),
+];
+
 export class Plugin implements InfraClientPluginClass {
   public config: InfraPublicConfig;
   private inventoryViews: InventoryViewsService;
@@ -180,8 +219,12 @@ export class Plugin implements InfraClientPluginClass {
     });
 
     const startDep$AndAccessibleFlag$ = from(core.getStartServices()).pipe(
-      switchMap(([{ application }]) =>
-        combineLatest([of(application), getLogsExplorerAccessible$(application)])
+      switchMap(([{ application, settings }]) =>
+        combineLatest([
+          of(application),
+          getLogsExplorerAccessible$(application),
+          settings.client.get$<boolean>(enableInfrastructureEntities, false),
+        ])
       )
     );
 
@@ -190,8 +233,11 @@ export class Plugin implements InfraClientPluginClass {
     /** !! Need to be kept in sync with the deepLinks in x-pack/solutions/observability/plugins/infra/public/plugin.ts */
     pluginsSetup.observabilityShared.navigation.registerSections(
       startDep$AndAccessibleFlag$.pipe(
-        map(([application, isLogsExplorerAccessible]) => {
+        map(([application, isLogsExplorerAccessible, infrastructureEntitiesEnabled]) => {
           const { infrastructure, logs } = application.capabilities;
+          const isEntitiesAppAvailable = Boolean(
+            application.capabilities.navLinks?.[INFRASTRUCTURE_ENTITIES_APP_ID]
+          );
           return [
             ...(logs.show
               ? [
@@ -211,27 +257,11 @@ export class Plugin implements InfraClientPluginClass {
                   {
                     label: metricsTitle,
                     sortKey: 300,
-                    entries: [
-                      {
-                        label: inventoryTitle,
-                        app: 'metrics',
-                        path: '/inventory',
-                      },
-                      ...(this.config.featureFlags.metricsExplorerEnabled
-                        ? [
-                            {
-                              label: metricsExplorerTitle,
-                              app: 'metrics',
-                              path: '/explorer',
-                            },
-                          ]
-                        : []),
-                      {
-                        label: hostsTitle,
-                        app: 'metrics',
-                        path: '/hosts',
-                      },
-                    ],
+                    entries: getInfrastructureNavigationEntries({
+                      metricsExplorerEnabled: this.config.featureFlags.metricsExplorerEnabled,
+                      infrastructureEntitiesEnabled,
+                      isEntitiesAppAvailable,
+                    }),
                   },
                 ]
               : []),

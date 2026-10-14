@@ -61,6 +61,7 @@
       "ingestHub",
       "significantEvents",
       "nightshiftInvestigations",
+      "infrastructureEntities",
     ],
     "requiredBundles": [
       "aiops",

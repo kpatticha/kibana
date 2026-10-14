@@ -49,6 +49,7 @@ export {
   apmEnableServiceInventoryTableSearchBar,
   apmTraceLogsDefaultColumns,
   enableDiagnosticMode,
+  enableInfrastructureEntities,
 } from './ui_settings_keys';
 
 export {

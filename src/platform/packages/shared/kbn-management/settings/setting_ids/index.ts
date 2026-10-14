@@ -214,6 +214,8 @@ export const OBSERVABILITY_STREAMS_SIGNIFICANT_EVENTS_SCHEDULED_DISCOVERY_FLAKY_
   'observability:streamsSigEventsScheduledDiscoveryFlakyRuleExemptSeverityScore';
 export const OBSERVABILITY_NIGHTSHIFT_DEVELOPER_MODE = 'observability:nightshiftDeveloperMode';
 export const OBSERVABILITY_ENABLE_DIAGNOSTIC_MODE = 'observability:enableDiagnosticMode';
+export const OBSERVABILITY_ENABLE_INFRASTRUCTURE_ENTITIES_ID =
+  'observability:enableInfrastructureEntities';
 
 // Reporting settings
 export const XPACK_REPORTING_CUSTOM_PDF_LOGO_ID = 'xpackReporting:customPdfLogo';

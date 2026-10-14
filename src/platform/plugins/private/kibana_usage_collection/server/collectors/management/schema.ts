@@ -952,6 +952,12 @@ export const stackManagementSchema: MakeSchemaFrom<UsageStats> = {
       description: 'Enable diagnostic mode',
     },
   },
+  'observability:enableInfrastructureEntities': {
+    type: 'boolean',
+    _meta: {
+      description: 'Enable the Infrastructure entities experience in the navigation',
+    },
+  },
   'observability:nightshiftDeveloperMode': {
     type: 'boolean',
     _meta: {

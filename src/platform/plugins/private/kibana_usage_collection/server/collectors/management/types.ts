@@ -203,6 +203,7 @@ export interface UsageStats {
   'cases:incrementalIdDisplay:enabled': boolean;
   'cases:maxOpenCasesPerRuleRun': number;
   'observability:enableDiagnosticMode': boolean;
+  'observability:enableInfrastructureEntities': boolean;
   'observability:nightshiftDeveloperMode': boolean;
   'genAiSettings:defaultAIConnector': string;
   'genAiSettings:defaultAIConnectorOnly': boolean;

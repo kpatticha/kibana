@@ -26,6 +26,7 @@ import { ReactQueryProvider } from '../../containers/react_query_provider';
 import { usePluginConfig } from '../../containers/plugin_config_context';
 import { RedirectWithQueryParams } from '../../utils/redirect_with_query_params';
 import { isMetricsHeaderPortalExcluded, MetricsHeaderActionMenu } from './header';
+import { InfrastructureEntitiesPromo } from '../../components/infrastructure_entities_promo';
 
 const MetricsExplorerPage = dynamic(() =>
   import('./metrics_explorer').then((mod) => ({ default: mod.MetricsExplorerPage }))
@@ -58,6 +59,8 @@ export const InfrastructurePage = () => {
                 <MetricsHeaderActionMenu />
               </HeaderMenuPortal>
             )}
+
+            <InfrastructureEntitiesPromo />
 
             <Routes enableExecutionContextTracking={true}>
               <Route path="/inventory" component={SnapshotPage} />

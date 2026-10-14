@@ -39,6 +39,7 @@ export const createNavigationTree = ({
   genAiSettingsAvailable = true,
   isCasesAvailable = true,
   showAiAssistant = true,
+  infrastructureEntitiesAvailable = false,
 }: {
   core: CoreStart;
   significantEventsAvailable?: boolean;
@@ -47,7 +48,17 @@ export const createNavigationTree = ({
   genAiSettingsAvailable?: boolean;
   isCasesAvailable?: boolean;
   showAiAssistant?: boolean;
+  infrastructureEntitiesAvailable?: boolean;
 }): NavigationTreeDefinition => {
+  // The Entities app supersedes the Infrastructure plugin views, so those links drop out of the
+  // side nav while staying routable for existing bookmarks and breadcrumbs.
+  const infraSideNavStatus: 'hidden' | 'visible' = infrastructureEntitiesAvailable
+    ? 'hidden'
+    : 'visible';
+  const entitiesSideNavStatus: 'hidden' | 'visible' = infrastructureEntitiesAvailable
+    ? 'visible'
+    : 'hidden';
+
   return {
     body: [
       ...filterForFeatureAvailability(
@@ -204,7 +215,7 @@ export const createNavigationTree = ({
       },
       {
         id: 'metrics',
-        link: 'metrics:inventory',
+        link: infrastructureEntitiesAvailable ? 'infrastructureEntities' : 'metrics:inventory',
         title: i18n.translate('xpack.serverlessObservability.nav.infrastructure', {
           defaultMessage: 'Infrastructure',
         }),
@@ -215,13 +226,15 @@ export const createNavigationTree = ({
             children: [
               {
                 link: 'metrics:inventory',
+                sideNavStatus: infraSideNavStatus,
                 title: i18n.translate('xpack.serverlessObservability.nav.infrastructureInventory', {
                   defaultMessage: 'Infrastructure inventory',
                 }),
               },
-              { link: 'metrics:hosts' },
+              { link: 'metrics:hosts', sideNavStatus: infraSideNavStatus },
               {
                 link: 'infrastructureEntities',
+                sideNavStatus: entitiesSideNavStatus,
                 title: i18n.translate('xpack.serverlessObservability.nav.infrastructureEntities', {
                   defaultMessage: 'Entities',
                 }),

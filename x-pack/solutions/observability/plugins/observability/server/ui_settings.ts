@@ -36,6 +36,7 @@ import {
   searchExcludedDataTiers,
   enableDiagnosticMode,
   apmMaxNumberOfServices,
+  enableInfrastructureEntities,
 } from '../common/ui_settings_keys';
 
 /**
@@ -488,6 +489,21 @@ export const uiSettings: Record<string, UiSettingsParams<boolean | number | stri
     description: i18n.translate('xpack.observability.enableDiagnosticModeDescription', {
       defaultMessage:
         'Enable diagnostic mode for debugging and troubleshooting capabilities. Currently available only in the Service map view.',
+    }),
+    schema: schema.boolean(),
+    requiresPageReload: false,
+    solutionViews: ['classic', 'oblt'],
+    technicalPreview: true,
+  },
+  [enableInfrastructureEntities]: {
+    category: [observabilityFeatureId],
+    name: i18n.translate('xpack.observability.enableInfrastructureEntities', {
+      defaultMessage: 'Infrastructure entities',
+    }),
+    value: false,
+    description: i18n.translate('xpack.observability.enableInfrastructureEntitiesDescription', {
+      defaultMessage:
+        'Replace the Infrastructure inventory, Hosts and Metrics explorer navigation links with the new Entities experience.',
     }),
     schema: schema.boolean(),
     requiresPageReload: false,

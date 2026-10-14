@@ -11,7 +11,10 @@ import { appCategories, appIds } from '@kbn/management-cards-navigation';
 import type { Subscription } from 'rxjs';
 import { combineLatest, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 import { AIChatExperience } from '@kbn/ai-assistant-common';
-import { AI_CHAT_EXPERIENCE_TYPE } from '@kbn/management-settings-ids';
+import {
+  AI_CHAT_EXPERIENCE_TYPE,
+  OBSERVABILITY_ENABLE_INFRASTRUCTURE_ENTITIES_ID,
+} from '@kbn/management-settings-ids';
 import { NIGHTSHIFT_ENABLED_FLAG } from '@kbn/nightshift-shared';
 import { createNavigationTree } from './navigation_tree';
 import type {
@@ -54,18 +57,30 @@ export class ServerlessObservabilityPlugin
       setupDeps.streams?.navigationStatus$ || of({ status: 'disabled' as const }),
       chatExperience$,
       core.featureFlags.getBooleanValue$(NIGHTSHIFT_ENABLED_FLAG, false),
+      core.settings.client.get$<boolean>(OBSERVABILITY_ENABLE_INFRASTRUCTURE_ENTITIES_ID, false),
     ]).pipe(
-      map(([{ status }, chatExperience, significantEventsAvailable]) => {
-        return createNavigationTree({
-          core,
+      map(
+        ([
+          { status },
+          chatExperience,
           significantEventsAvailable,
-          streamsAvailable: status === 'enabled',
-          overviewAvailable: core.pricing.isFeatureAvailable('observability:complete_overview'),
-          genAiSettingsAvailable: core.pricing.isFeatureAvailable('observability:gen_ai_settings'),
-          isCasesAvailable: Boolean(setupDeps.cases),
-          showAiAssistant: chatExperience !== AIChatExperience.Agent,
-        });
-      })
+          infrastructureEntitiesEnabled,
+        ]) => {
+          return createNavigationTree({
+            core,
+            significantEventsAvailable,
+            streamsAvailable: status === 'enabled',
+            overviewAvailable: core.pricing.isFeatureAvailable('observability:complete_overview'),
+            genAiSettingsAvailable: core.pricing.isFeatureAvailable(
+              'observability:gen_ai_settings'
+            ),
+            isCasesAvailable: Boolean(setupDeps.cases),
+            showAiAssistant: chatExperience !== AIChatExperience.Agent,
+            infrastructureEntitiesAvailable:
+              Boolean(setupDeps.infrastructureEntities) && infrastructureEntitiesEnabled,
+          });
+        }
+      )
     );
     navigation.initNavigation('oblt', navigationTree$);
 
