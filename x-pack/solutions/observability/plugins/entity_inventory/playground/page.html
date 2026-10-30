@@ -1,0 +1,1051 @@
+<!doctype html>
+<!-- Local only, excluded from git. Served by server.ts. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Entity inventory playground</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; color: #1d2a3e; background: #f6f8fc; }
+  code, pre, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
+  .app { display: grid; grid-template-rows: auto 1fr; height: 100vh; }
+  .topbar { display: flex; align-items: center; gap: 16px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #d3dae6; }
+  .topbar h1 { font-size: 15px; margin: 0; }
+  .tools { display: flex; background: #eef1f6; border-radius: 6px; padding: 3px; }
+  .tools button { border: 0; background: transparent; padding: 6px 16px; border-radius: 4px; font-weight: 600; color: #516381; cursor: pointer; }
+  .tools button.active { background: #fff; color: #0b64dd; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .controls { display: flex; gap: 12px; align-items: center; margin-left: auto; }
+  .controls label { font-size: 12px; color: #516381; display: flex; align-items: center; gap: 4px; }
+  input[type=number] { width: 64px; padding: 4px 6px; border: 1px solid #c4cdd9; border-radius: 4px; }
+  button.btn { padding: 6px 12px; border-radius: 4px; border: 1px solid #c4cdd9; background: #fff; cursor: pointer; font-weight: 500; }
+  button.primary { background: #0b64dd; border-color: #0b64dd; color: #fff; }
+  button:disabled { opacity: .6; cursor: progress; }
+  .layout { display: grid; grid-template-columns: minmax(360px, 36%) 1fr; min-height: 0; }
+  .left { display: flex; flex-direction: column; border-right: 1px solid #d3dae6; background: #fff; min-height: 0; }
+  .left .label { padding: 8px 16px; font-size: 12px; font-weight: 600; color: #516381; border-bottom: 1px solid #eef1f6; display: flex; justify-content: space-between; align-items: center; }
+  textarea { flex: 1; width: 100%; border: 0; padding: 12px 16px; resize: none; outline: none; font: 12.5px/1.5 "SF Mono", Menlo, Consolas, monospace; color: #1d2a3e; }
+  .right { display: grid; grid-template-rows: auto auto 1fr; min-height: 0; }
+  .tabs { display: flex; gap: 2px; padding: 8px 16px 0; background: #fff; border-bottom: 1px solid #d3dae6; overflow-x: auto; }
+  .tabs button { border: 0; background: transparent; padding: 8px 12px; border-bottom: 2px solid transparent; cursor: pointer; color: #516381; font-weight: 500; white-space: nowrap; }
+  .tabs button.active { color: #0b64dd; border-bottom-color: #0b64dd; }
+  .tabs button .n { color: #98a2b3; margin-right: 4px; font-variant-numeric: tabular-nums; }
+  .tabs button.failed { color: #bd271e; }
+  .tabs button.failed.active { border-bottom-color: #bd271e; }
+  .status { padding: 6px 16px; font-size: 12px; color: #516381; background: #fbfcfe; border-bottom: 1px solid #eef1f6; }
+  .panel { overflow: auto; padding: 16px 20px 40px; min-height: 0; }
+  .head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .head h2 { font-size: 16px; margin: 0; }
+  .fn { font: 12px "SF Mono", Menlo, monospace; color: #0b64dd; background: #eef4ff; padding: 1px 6px; border-radius: 3px; }
+  .desc { color: #516381; font-size: 13px; margin: 0 0 14px; max-width: 900px; }
+  h3 { font-size: 13px; margin: 18px 0 6px; color: #343741; }
+  .card { background: #fff; border: 1px solid #d3dae6; border-radius: 6px; padding: 12px 14px; margin-bottom: 12px; }
+  .card-title { display: flex; gap: 8px; align-items: center; font-weight: 600; margin-bottom: 8px; flex-wrap: wrap; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13px; }
+  .kv .k { color: #69707d; }
+  table { border-collapse: collapse; font-size: 12.5px; background: #fff; width: 100%; }
+  th, td { border: 1px solid #e3e8f2; padding: 5px 8px; text-align: left; vertical-align: top; }
+  th { background: #f6f8fc; font-weight: 600; white-space: nowrap; }
+  th .type { color: #98a2b3; font-weight: 400; margin-left: 4px; }
+  td.null { color: #b0b8c6; font-style: italic; }
+  td.center { text-align: center; }
+  .scroll { overflow-x: auto; }
+  pre.code { margin: 0; padding: 10px 12px; background: #fbfcfe; border: 1px solid #e3e8f2; border-left: 3px solid #0b64dd; border-radius: 4px; overflow: auto; font-size: 12px; line-height: 1.55; white-space: pre; }
+  pre.error { margin: 0; padding: 10px 12px; background: #fff4f3; border: 1px solid #f2c7c3; color: #bd271e; border-radius: 4px; white-space: pre-wrap; font-size: 12.5px; }
+  .chip { display: inline-block; font: 12px "SF Mono", Menlo, monospace; background: #eef1f6; border-radius: 3px; padding: 1px 6px; margin: 1px 4px 1px 0; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; letter-spacing: .02em; }
+  .b-blue { background: #e6f0ff; color: #0b64dd; } .b-green { background: #e3f6ee; color: #00805c; }
+  .b-red { background: #fde8e7; color: #bd271e; } .b-grey { background: #eef1f6; color: #516381; }
+  .b-purple { background: #f1e9fb; color: #7b41c4; } .b-amber { background: #fdf2dc; color: #965a00; }
+  .big { display: flex; gap: 28px; margin: 4px 0 8px; }
+  .big div { font-size: 12px; color: #69707d; } .big b { display: block; font-size: 26px; color: #1d2a3e; }
+  ol.compositions { margin: 0; padding-left: 20px; }
+  .ok { color: #00805c; font-weight: 700; } .no { color: #c4cdd9; }
+  .empty { color: #69707d; padding: 40px 0; text-align: center; }
+  .muted { color: #69707d; font-size: 12px; }
+  .presets { padding: 8px 16px 10px; border-bottom: 1px solid #d3dae6; display: flex; flex-direction: column; gap: 6px; }
+  .presets select { width: 100%; padding: 6px 8px; border: 1px solid #c4cdd9; border-radius: 4px; font: inherit; font-size: 13px; background: #fff; }
+  .presets .note { font-size: 12px; color: #516381; display: flex; gap: 6px; align-items: baseline; }
+  .seg { display: flex; background: #eef1f6; border-radius: 4px; padding: 2px; }
+  .seg button { border: 0; background: transparent; padding: 3px 10px; border-radius: 3px; font-size: 12px; font-weight: 600; color: #516381; cursor: pointer; }
+  .seg button.active { background: #fff; color: #0b64dd; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .label .actions { display: flex; gap: 8px; align-items: center; }
+  .configure { flex: 1; overflow: auto; padding: 12px 16px 24px; min-height: 0; }
+  .configure .card { padding: 10px 12px; }
+  .field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; font-size: 12px; color: #516381; }
+  .field input, .attr input { padding: 5px 7px; border: 1px solid #c4cdd9; border-radius: 4px; font: 12.5px "SF Mono", Menlo, Consolas, monospace; color: #1d2a3e; width: 100%; }
+  .field input:invalid, .field input.invalid { border-color: #bd271e; }
+  .attr { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 6px; align-items: center; margin-bottom: 4px; }
+  .attr .arrow { color: #98a2b3; }
+  .icon { border: 0; background: transparent; cursor: pointer; color: #69707d; font-size: 14px; padding: 2px 6px; border-radius: 3px; }
+  .icon:hover { background: #fde8e7; color: #bd271e; }
+  .link { border: 0; background: transparent; color: #0b64dd; cursor: pointer; padding: 2px 0; font-size: 12px; font-weight: 600; }
+  .row { display: flex; gap: 8px; align-items: flex-end; }
+  .row .field { flex: 1; }
+  /* ---------- configure ---------- */
+  input[type=text] { transition: border-color .12s, box-shadow .12s; }
+  input[type=text]:focus { outline: none; border-color: #0b64dd; box-shadow: 0 0 0 3px rgba(11,100,221,.15); }
+  .configure { background: #f6f8fc; padding: 10px 12px 32px; }
+  .section { background: #fff; border: 1px solid #d3dae6; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .section > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 9px 12px; user-select: none; }
+  .section > summary::-webkit-details-marker { display: none; }
+  .section > summary::before { content: '▸'; color: #98a2b3; transition: transform .15s; font-size: 11px; }
+  .section[open] > summary::before { transform: rotate(90deg); }
+  .section > summary:hover { background: #fbfcfe; }
+  .section[open] > summary { border-bottom: 1px solid #eef1f6; }
+  .section > :not(summary) { margin: 10px 12px; }
+  .section-title { font-weight: 700; font-size: 13px; }
+  .summary-meta { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .summary-code { font-size: 12px; color: #516381; }
+  .identity-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .seg-lg button { padding: 5px 14px; font-size: 12.5px; transition: background .12s, color .12s; }
+  .seg-lg button:hover:not(.active) { color: #1d2a3e; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #516381; cursor: pointer; }
+  .toggle input { display: none; }
+  .toggle .track { width: 28px; height: 16px; border-radius: 8px; background: #c4cdd9; position: relative; transition: background .15s; }
+  .toggle .track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .toggle input:checked + .track { background: #0b64dd; }
+  .toggle input:checked + .track::after { transform: translateX(12px); }
+  .ranking { display: flex; flex-direction: column; gap: 8px; }
+  .composition, .source { border: 1px solid #e3e8f2; border-left: 3px solid #0b64dd; border-radius: 6px; padding: 8px 10px; background: #fbfcfe; transition: border-color .12s, box-shadow .12s; }
+  .composition:hover, .source:hover { box-shadow: 0 1px 4px rgba(16,24,40,.08); }
+  .composition.has-issue { border-left-color: #bd271e; background: #fffafa; }
+  .source { border-left-color: #00805c; margin-bottom: 8px; }
+  .composition-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+  .spacer { flex: 1; }
+  .rank-badge { font: 700 11px "SF Mono", Menlo, monospace; color: #fff; background: #0b64dd; border-radius: 10px; padding: 1px 7px; }
+  .rank-badge.src { background: #00805c; }
+  .source-title { font: 12px "SF Mono", Menlo, monospace; color: #343741; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .icon-btn { border: 1px solid transparent; background: transparent; cursor: pointer; color: #69707d; font-size: 12px; width: 22px; height: 22px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; }
+  .icon-btn:hover:not(:disabled) { background: #eef1f6; color: #1d2a3e; }
+  .icon-btn.danger:hover { background: #fde8e7; color: #bd271e; }
+  .icon-btn:disabled { opacity: .3; cursor: default; }
+  .parts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .part { display: inline-flex; align-items: stretch; border-radius: 5px; overflow: hidden; border: 1px solid; }
+  .part-field { border-color: #b9d1f5; background: #e6f0ff; }
+  .part-sep { border-color: #f0d9a8; background: #fdf2dc; }
+  .part-kind { border: 0; padding: 0 6px; font: 700 10px -apple-system, sans-serif; text-transform: uppercase; letter-spacing: .04em; cursor: pointer; }
+  .part-field .part-kind { color: #0b64dd; background: #d5e5ff; }
+  .part-sep .part-kind { color: #965a00; background: #f8e5bb; }
+  .part-kind:hover { filter: brightness(.94); }
+  .part-kind.static { cursor: default; display: flex; align-items: center; }
+  .part input { border: 0; background: #fff; padding: 4px 6px; font: 12.5px "SF Mono", Menlo, Consolas, monospace; min-width: 40px; width: auto; border-radius: 0; }
+  .part input:focus { box-shadow: none; }
+  .part:focus-within { box-shadow: 0 0 0 3px rgba(11,100,221,.15); }
+  .parts.single, .parts.single .part { width: 100%; }
+  .part input.wide { flex: 1; }
+  .part-x { border: 0; background: transparent; cursor: pointer; color: #98a2b3; padding: 0 6px; font-size: 14px; }
+  .part-x:hover { color: #bd271e; background: #fde8e7; }
+  .add-part { border: 1px dashed #c4cdd9; background: #fff; color: #516381; border-radius: 5px; padding: 3px 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: all .12s; }
+  .add-part:hover { border-color: #0b64dd; color: #0b64dd; background: #f5f9ff; }
+  .add-row { border: 1px dashed #c4cdd9; background: transparent; color: #516381; border-radius: 6px; padding: 7px; font-size: 12px; font-weight: 600; cursor: pointer; width: calc(100% - 24px); transition: all .12s; }
+  .ranking .add-row { width: 100%; }
+  .add-row:hover { border-color: #0b64dd; color: #0b64dd; background: #f5f9ff; }
+  .issue { margin-top: 6px; font-size: 11.5px; color: #bd271e; }
+  .issue::before { content: '⚠ '; }
+  .warn { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 12px; color: #965a00; background: #fdf8ec; border: 1px solid #f0d9a8; border-radius: 6px; padding: 6px 10px; }
+  .filter-status { font-size: 12px; display: flex; gap: 8px; align-items: baseline; }
+  .filter-status.in-sync { color: #00805c; } .filter-status.custom { color: #bd271e; }
+  .preview { background: #1d2a3e; color: #dfe5ef; border-radius: 6px; padding: 8px 10px; }
+  .preview-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: #98a2b3; margin-bottom: 4px; font-weight: 700; }
+  .preview-line { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; }
+  .preview-line .rank { color: #98a2b3; font-size: 11px; width: 28px; }
+  .p-prefix { color: #98a2b3; } .p-field { color: #7fb5ff; } .p-sep { color: #ffcf70; }
+  .empty-ranking { padding: 6px 0; }
+  .field-label { font-size: 12px; color: #516381; margin: 2px 0 4px; }
+  .attr .icon-btn { width: 24px; }
+  .attr { grid-template-columns: 1fr auto 1fr auto auto; }
+  .attribute { border-radius: 6px; margin: 0 -4px 4px; padding: 0 4px; transition: background .12s; }
+  .attribute.open { background: #f1f6ff; padding-top: 4px; padding-bottom: 6px; }
+  .labels-btn { border: 1px solid #c4cdd9; background: #fff; color: #516381; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; transition: all .12s; }
+  .labels-btn:hover { border-color: #0b64dd; color: #0b64dd; }
+  .labels-btn.has { border-color: #b9d1f5; background: #e6f0ff; color: #0b64dd; }
+  .labels-btn.active { background: #0b64dd; border-color: #0b64dd; color: #fff; }
+  .labels-btn .count { background: rgba(255,255,255,.6); color: inherit; border-radius: 8px; padding: 0 5px; font-size: 10.5px; }
+  .labels-btn.has:not(.active) .count { background: #0b64dd; color: #fff; }
+  .labels { margin: 6px 0 0 14px; padding: 8px 10px; border-left: 2px solid #0b64dd; background: #fff; border-radius: 0 6px 6px 0; display: flex; flex-direction: column; gap: 4px; }
+  .labels-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 600; color: #343741; flex-wrap: wrap; }
+  .label-row { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 6px; align-items: center; }
+  .label-row input { padding: 4px 7px; border: 1px solid #c4cdd9; border-radius: 4px; font: 12.5px "SF Mono", Menlo, Consolas, monospace; width: 100%; }
+  .label-row input.invalid { border-color: #bd271e; background: #fff4f3; }
+  .label-row .arrow { color: #98a2b3; }
+  .labels-actions { display: flex; gap: 12px; align-items: center; margin-top: 2px; }
+  .add-part:disabled { opacity: .45; cursor: not-allowed; }
+  .danger-link { color: #bd271e; }
+  /* ---------- knowledge sharing ---------- */
+  .deck-link { font-size: 12px; font-weight: 600; color: #0b64dd; text-decoration: none; border: 1px solid #b9d1f5; border-radius: 12px; padding: 2px 10px; }
+  .deck-link:hover { background: #e6f0ff; }
+  .tabs { align-items: stretch; gap: 0; padding: 10px 16px; background: #fbfcfe; }
+  .tabs .lane { display: flex; flex-direction: column; gap: 4px; }
+  .tabs .lane-label { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #98a2b3; padding-left: 2px; }
+  .tabs .lane-steps { display: flex; align-items: center; }
+  .tabs .lane + .lane { margin-left: 18px; padding-left: 18px; border-left: 1px dashed #d3dae6; }
+  .tabs button { display: flex; align-items: center; gap: 6px; border: 1px solid #d3dae6; border-radius: 8px; background: #fff; padding: 6px 10px; margin: 0; border-bottom-width: 1px; transition: all .12s; }
+  .tabs button:hover { border-color: #0b64dd; color: #0b64dd; }
+  .tabs button.active { background: #0b64dd; border-color: #0b64dd; color: #fff; box-shadow: 0 2px 6px rgba(11,100,221,.25); }
+  .tabs button.active .n { color: rgba(255,255,255,.75); }
+  .tabs button.failed { border-color: #bd271e; background: #fff4f3; }
+  .tabs button.failed.active { background: #bd271e; color: #fff; }
+  .tabs button.es { box-shadow: inset 0 -3px 0 #e0a23d; }
+  .tabs button.es.active { box-shadow: inset 0 -3px 0 #f2c97d, 0 2px 6px rgba(11,100,221,.25); }
+  .tabs .dot { width: 7px; height: 7px; border-radius: 50%; background: #00a36c; flex: none; }
+  .tabs .failed .dot { background: #bd271e; }
+  .tabs .active .dot { background: #fff; }
+  .tabs .arrow-sep { color: #b0b8c6; padding: 0 4px; font-size: 13px; }
+  .es-legend { font-size: 11px; color: #69707d; display: flex; align-items: center; gap: 6px; margin-left: auto; align-self: flex-end; white-space: nowrap; padding-left: 16px; }
+  .es-legend i { display: inline-block; width: 14px; height: 3px; background: #e0a23d; border-radius: 2px; }
+  .explain { display: flex; gap: 12px; background: linear-gradient(90deg, #fffaf0, #fff); border: 1px solid #f0d9a8; border-left: 4px solid #e0a23d; border-radius: 8px; padding: 12px 14px; margin: 4px 0 16px; max-width: 980px; }
+  .explain .bulb { font-size: 20px; line-height: 1.2; }
+  .explain p { margin: 0 0 6px; font-size: 13.5px; color: #343741; }
+  .explain p:last-child { margin-bottom: 0; }
+  .explain .why { color: #516381; }
+  .stepper { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 14px; border-top: 1px solid #e3e8f2; }
+  .stepper button { border: 1px solid #c4cdd9; background: #fff; border-radius: 6px; padding: 6px 12px; font-weight: 600; color: #343741; cursor: pointer; }
+  .stepper button:hover:not(:disabled) { border-color: #0b64dd; color: #0b64dd; }
+  .stepper button:disabled { opacity: .35; cursor: default; }
+  .stepper .where { font-size: 12px; color: #98a2b3; }
+  .esql { margin: 0; background: #16213a; border-radius: 8px; padding: 10px 0; overflow: auto; font: 12px/1.6 "SF Mono", Menlo, Consolas, monospace; color: #e6eaf2; }
+  .esql .line { display: block; padding: 0 12px 0 10px; border-left: 4px solid transparent; white-space: pre; transition: opacity .12s, background .12s; }
+  .esql.focus .line { opacity: .28; }
+  .esql.focus .line.on { opacity: 1; background: rgba(255,255,255,.06); }
+  .esql .k-meta { border-left-color: #5c6b88; color: #8b96ab; }
+  .esql .k-source { border-left-color: #2e9e6b; }
+  .esql .k-time { border-left-color: #8b96ab; }
+  .esql .k-identity { border-left-color: #5b8def; }
+  .esql .k-attribute { border-left-color: #7cc8a2; }
+  .esql .k-lastseen { border-left-color: #e0a23d; }
+  .esql .k-id { border-left-color: #f2c97d; }
+  .esql .k-output { border-left-color: #5c6b88; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+  .legend span { font-size: 11.5px; font-weight: 600; border-radius: 10px; padding: 2px 9px; cursor: default; border: 1px solid transparent; background: #eef1f6; color: #343741; display: inline-flex; align-items: center; gap: 5px; }
+  .legend span::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--c); }
+  .legend span:hover { border-color: var(--c); background: #fff; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1d2a3e; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.2); z-index: 10; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1>Entity inventory playground</h1>
+    <a class="deck-link" href="https://claude.ai/artifact/9TJNEkUrqyfz6eWs6DFd7E" target="_blank" rel="noopener" title="The walkthrough deck">Slides ↗</a>
+    <div class="tools">
+      <button data-tool="generate" class="active">Generator</button>
+      <button data-tool="execute">Executor</button>
+    </div>
+    <div class="controls">
+      <label>Last <input id="minutes" type="number" min="1" value="15" /> min</label>
+      <label>Limit <input id="limit" type="number" min="1" max="1000" value="20" /></label>
+      <label><input id="readability" type="checkbox" checked /> check privileges</label>
+      <label><input id="autorun" type="checkbox" checked /> auto-run</label>
+      <label title="Show a plain-words explanation on every step"><input id="explain" type="checkbox" checked /> explain</label>
+      <button id="share" class="btn" title="Copy a link that opens this exact definition and step">Copy link</button>
+      <button id="copyStep" class="btn" title="Copy the current step as Markdown, for Slack or docs">Copy step</button>
+      <button id="run" class="btn primary">Run ⌘↵</button>
+    </div>
+  </div>
+  <div class="layout">
+    <section class="left">
+      <div class="label">Preset <span class="muted">every identity shape the schema allows</span></div>
+      <div class="presets">
+        <select id="preset" aria-label="Preset definition"></select>
+        <div id="presetNote" class="note"></div>
+      </div>
+      <div class="label">
+        <span id="definitionTitle">Definition</span>
+        <span class="actions">
+          <span class="seg"><button data-mode="configure" class="active">Configure</button><button data-mode="json">JSON</button></span>
+          <button id="reset" class="btn">Reset</button>
+        </span>
+      </div>
+      <div id="configure" class="configure"></div>
+      <textarea id="definition" class="hidden" spellcheck="false"></textarea>
+    </section>
+    <section class="right">
+      <div id="tabs" class="tabs"></div>
+      <div id="status" class="status"></div>
+      <div id="toast" class="toast hidden"></div>
+      <div id="panel" class="panel"><div class="empty">Run to see every step.</div></div>
+    </section>
+  </div>
+</div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const STORAGE_KEY = 'entityInventoryPlayground.definition';
+  const TOOL_DESCRIPTIONS = {
+    generate: 'Generator: definition → identity → resolved indices → plans → ES|QL. Nothing runs against the data except the index lookup planSources needs.',
+    execute: 'Executor: drops plans that cannot build an id, runs the queries, labels, merges and orders the rows, and checks the result against listEntities.',
+  };
+  const PRESET_KEY = 'entityInventoryPlayground.preset';
+  const EXPLAIN_KEY = 'entityInventoryPlayground.explain';
+  const state = { tool: 'generate', results: {}, activeTab: {}, presets: [], presetId: null, edited: false, mode: 'configure', stash: {}, closed: {}, labelsOpen: {}, focusNext: null };
+
+  // ---------- tiny DOM helpers ----------
+  const h = (tag, attrs = {}, ...children) => {
+    const node = document.createElement(tag);
+    Object.entries(attrs).forEach(([k, v]) => {
+      if (v === null || v === undefined) return;
+      if (k === 'class') node.className = v;
+      else if (k === 'text') node.textContent = v;
+      else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+      else node.setAttribute(k, v);
+    });
+    children.flat(Infinity).forEach((c) => c !== null && c !== undefined && c !== false && node.appendChild(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(String(c)) : c));
+    return node;
+  };
+  const code = (text) => h('pre', { class: 'code', text });
+  const errorBox = (text) => h('pre', { class: 'error', text });
+  const chip = (text) => h('span', { class: 'chip', text });
+  const chips = (list) => (list && list.length ? h('span', {}, list.map(chip)) : h('span', { class: 'muted', text: 'none' }));
+  const badge = (text, color = 'grey') => h('span', { class: `badge b-${color}`, text });
+  const engineBadge = (engine) => badge(engine, engine === 'TS' ? 'purple' : 'blue');
+  const card = (title, ...body) => h('div', { class: 'card' }, h('div', { class: 'card-title' }, title), ...body);
+  const kv = (pairs) => h('div', { class: 'kv' }, pairs.flatMap(([k, v]) => [h('div', { class: 'k', text: k }), h('div', {}, v)]));
+  const cellValue = (v) => {
+    if (v === null || v === undefined) return h('td', { class: 'null', text: 'null' });
+    if (v instanceof Node) return h('td', {}, v);
+    return h('td', { text: Array.isArray(v) ? v.join(', ') : String(v) });
+  };
+  const table = (headers, rows) =>
+    h('div', { class: 'scroll' }, h('table', {},
+      h('thead', {}, h('tr', {}, headers.map((x) => (x instanceof Node ? h('th', {}, x) : h('th', { text: x }))))),
+      h('tbody', {}, rows.length ? rows.map((r) => h('tr', {}, r.map(cellValue))) : h('tr', {}, h('td', { class: 'null', colspan: headers.length, text: 'no rows' })))));
+  const rowsTable = (columns, rows) =>
+    table(columns.map(({ name, type }) => h('span', {}, name, type ? h('span', { class: 'type', text: type }) : null)), rows.map((row) => columns.map(({ name }) => row[name])));
+  const paramsTable = (params) =>
+    table(['parameter', 'value'], params.flatMap((p) => Object.entries(p)).map(([k, v]) => [h('span', { class: 'mono', text: `?${k}` }), h('span', { class: 'mono', text: String(v) })]));
+  const planLabel = (plan) => h('span', {}, `Plan ${plan.index} `, engineBadge(plan.engine), ' ', h('span', { class: 'mono', text: plan.indexPattern }), ' ', badge(plan.queryTarget === 'indices' ? `split · ${plan.indices.length} indices` : 'whole pattern', plan.queryTarget === 'indices' ? 'amber' : 'grey'));
+  const statsLine = (s) => s ? h('div', { class: 'muted', text: `${s.rowCount} rows · took ${s.took ?? '–'} ms · ${s.documentsFound ?? '–'} documents found · ${s.valuesLoaded ?? '–'} values loaded` }) : null;
+  const kindColor = { id: 'blue', identity: 'purple', attribute: 'green', last_seen: 'amber' };
+
+  // ---------- one renderer per step ----------
+  const RENDER = {
+    definition: (d) => [
+      kv([['type', h('span', { class: 'mono', text: d.type })], ['name', d.name], ['identity', d.identityKind], ['sources', String(d.sources.length)]]),
+      h('h3', { text: 'Sources' }),
+      table(['#', 'index pattern', 'filter', 'attributes (column ← field)'], d.sources.map((s, i) => [
+        String(i), h('span', { class: 'mono', text: s.indexPattern }), s.filter ? h('span', { class: 'mono', text: s.filter }) : null,
+        h('div', {}, (s.attributes || []).map((a) => h('div', {}, chip(a.name), ' ← ', h('span', { class: 'mono', text: a.field }), a.valueLabels ? badge(`${Object.keys(a.valueLabels).length} labels`, 'green') : null))),
+      ])),
+    ],
+    identity: (d) => [
+      kv([
+        ['grouping fields', chips(d.groupingFields)],
+        ['compositions', h('ol', { class: 'compositions' }, d.compositions.map((c) => h('li', {}, c.map((f, i) => [i ? ' + ' : '', chip(f)]))))],
+        ['helper columns', chips(d.helperColumns)],
+      ]),
+      h('h3', { text: 'Presence filter (WHERE)' }), code(d.presenceFilter),
+      h('h3', { text: 'Id evaluation (EVAL)' }), code(d.idEvaluation),
+    ],
+    resolve: (rows) => [
+      table(['index pattern', 'status', 'concrete indices (mode)', 'reason'], rows.map((r) => [
+        h('span', { class: 'mono', text: r.pattern }),
+        r.usable ? badge('usable', 'green') : badge(r.cause || 'unusable', 'red'),
+        r.usable ? h('div', {}, r.indices.map((i) => h('div', {}, h('span', { class: 'mono', text: i.name }), ' ', badge(i.mode, i.mode === 'time_series' ? 'purple' : 'blue')))) : null,
+        r.usable ? null : `${r.reason}${r.status ? ` (HTTP ${r.status})` : ''}`,
+      ])),
+    ],
+    fromGenerator: ({ definition, identity, resolve, plans }, steps) => [
+      kv([
+        ['type', h('span', { class: 'mono', text: definition.type })],
+        ['identity', h('span', {}, badge(definition.identityKind, 'purple'), ' ', chips(identity.groupingFields))],
+        ['sources', String(definition.sources.length)],
+        ['plans', plans.length ? h('div', {}, plans.map((plan) => h('div', {}, planLabel(plan)))) : h('span', { class: 'muted', text: 'none' })],
+      ]),
+      h('h3', { text: 'Resolved sources' }),
+      RENDER.resolve(resolve, steps),
+      h('div', { style: 'height:12px' }),
+      h('button', { class: 'btn', text: 'See every generator step →', onclick: () => { state.tool = 'generate'; state.activeTab.generate = 'definition'; if (state.results.generate) render(); else run(); } }),
+    ],
+    plans: (plans) => [
+      table(['plan', 'source', 'index pattern', 'engine', 'queried by', 'indices', 'filter', 'attributes'], plans.map((p) => [
+        String(p.index), String(p.sourceIndex), h('span', { class: 'mono', text: p.indexPattern }), engineBadge(p.engine),
+        p.queryTarget === 'indices' ? badge('its indices (split)', 'amber') : badge('pattern', 'grey'),
+        h('div', {}, p.indices.map((n) => h('div', { class: 'mono', text: n }))),
+        p.filter ? h('span', { class: 'mono', text: p.filter }) : null,
+        h('div', {}, p.attributes.map((a) => chip(a.name))),
+      ])),
+    ],
+    columns: (cols) => [table(['column', 'kind'], cols.map((c) => [h('span', { class: 'mono', text: c.name }), badge(c.kind, kindColor[c.kind])]))],
+    listQueries: (queries) => queries.map((q) => card(planLabel(q.plan), esqlView(q.esql), h('h3', { text: 'Parameters' }), paramsTable(q.params))),
+    countQuery: (q) => [
+      h('div', { class: 'muted' }, 'Over plans: ', ...q.plans.map((p) => [planLabel(p), ' '])),
+      h('h3', { text: 'ES|QL' }), esqlView(q.esql), h('h3', { text: 'Parameters' }), paramsTable(q.params),
+    ],
+    availability: ({ compositions, plans }) => [
+      kv([['identity compositions', h('ol', { class: 'compositions' }, compositions.map((c) => h('li', {}, c.map((f, i) => [i ? ' + ' : '', chip(f)]))))]]),
+      h('h3', { text: 'Plans' }),
+      ...plans.map(({ plan, verdict, mapped, fieldsAsked }) => card(
+        h('span', {}, planLabel(plan), ' ', verdict.usable ? badge('kept', 'green') : badge('dropped', 'red')),
+        verdict.reason ? errorBox(verdict.reason) : null,
+        kv([['attributes no index maps', chips(verdict.unavailableFields)]]),
+        mapped ? [h('h3', { text: 'Mapped fields per index' }), table(['index', ...fieldsAsked], Object.entries(mapped).map(([index, fields]) => [h('span', { class: 'mono', text: index }), ...fieldsAsked.map((f) => h('span', { class: fields.includes(f) ? 'ok' : 'no', text: fields.includes(f) ? '✓' : '–' }))]))] : null,
+      )),
+    ],
+    listResults: (results) => results.map((r) => card(planLabel(r.plan), r.error ? errorBox(`${r.error.reason}${r.error.status ? ` (HTTP ${r.error.status})` : ''}`) : [statsLine(r.stats), h('div', { style: 'height:8px' }), rowsTable(r.columns, r.rows)])),
+    countResult: (r) => [
+      h('div', { class: 'big' }, h('div', {}, h('b', { text: String(r.rows[0]?.count ?? '–') }), 'count (distinct entity ids)'), h('div', {}, h('b', { text: String(r.rows[0]?.raw_groups ?? '–') }), 'raw_groups (before merge by id)')),
+      statsLine(r.stats),
+      (r.rows[0]?.raw_groups ?? 0) > (r.rows[0]?.count ?? 0) ? h('p', { class: 'desc', text: 'raw_groups > count: several raw identity groups produced the same entity.id and were merged.' }) : null,
+      h('h3', { text: 'ES|QL' }), code(r.esql),
+    ],
+    labels: (results) => results.map((r) => card(planLabel(r.plan),
+      r.labelled.length
+        ? [h('h3', { text: 'Labelled attributes' }), table(['attribute', 'raw value', 'label'], r.labelled.flatMap((a) => Object.entries(a.valueLabels).map(([raw, label]) => [chip(a.name), h('span', { class: 'mono', text: raw }), label])))]
+        : h('div', { class: 'muted', text: 'No attribute of this plan has valueLabels, so its rows are unchanged.' }),
+      h('h3', { text: `Rows after labels (${r.rows.length})` }),
+      rowsTable([...new Set(r.rows.flatMap((row) => Object.keys(row)))].map((name) => ({ name })), r.rows),
+    )),
+    merge: (m) => [
+      kv([['entities', String(m.rows.length)], ['dropped rows (no string entity.id)', String(m.droppedRows)]]),
+      h('h3', { text: 'Column types (first non-null type a plan returned)' }),
+      table(['column', 'kind', 'type'], m.columns.map((c) => [h('span', { class: 'mono', text: c.name }), badge(c.kind, kindColor[c.kind]), c.type])),
+      h('h3', { text: 'Merged rows (first-seen order, before ordering)' }),
+      rowsTable(m.columns, m.rows),
+      h('h3', { text: 'Provenance: which source supplied each attribute' }),
+      table(['entity.id', 'attribute', 'from index pattern'], Object.entries(m.provenance).flatMap(([id, attrs]) => Object.entries(attrs).map(([attr, pattern]) => [h('span', { class: 'mono', text: id }), chip(attr), h('span', { class: 'mono', text: pattern })]))),
+    ],
+    final: (f) => [h('div', { class: 'muted', text: `${f.rows.length} rows (limit ${f.limit})` }), h('div', { style: 'height:8px' }), rowsTable(f.columns, f.rows)],
+    compare: (r, steps) => {
+      const final = steps.find((s) => s.key === 'final')?.data;
+      const same = final && JSON.stringify(final.rows) === JSON.stringify(r.rows);
+      return [
+        h('div', { class: 'big' }, h('div', {}, h('b', {}, same ? badge('match', 'green') : badge('differs', 'red')), 'rows vs the Final tab'), h('div', {}, h('b', { text: String(r.total ?? '–') }), 'total'), h('div', {}, h('b', { text: String(r.truncated) }), 'truncated')),
+        h('h3', { text: 'Plans that ran' }),
+        table(['plan', 'index pattern', 'engine', 'indices', 'rows', 'took ms'], r.plans.map((p) => [String(p.index), h('span', { class: 'mono', text: p.indexPattern }), engineBadge(p.engine), String(p.indexCount), p.stats ? String(p.stats.rowCount) : null, p.stats ? String(p.stats.took) : null])),
+        h('h3', { text: 'Errors returned to the caller' }),
+        table(['index pattern', 'status', 'reason'], r.errors.map((e) => [h('span', { class: 'mono', text: e.indexPattern }), e.status === null ? null : String(e.status), e.reason])),
+      ];
+    },
+  };
+
+  const tabSummary = (s) => {
+    const d = s.data;
+    if (s.error || d === undefined) return '';
+    if (s.key === 'plans' || s.key === 'columns' || s.key === 'listQueries' || s.key === 'listResults') return ` (${d.length})`;
+    if (s.key === 'merge') return ` (${d.rows.length})`;
+    if (s.key === 'final') return ` (${d.rows.length})`;
+    return '';
+  };
+
+  // ---------- knowledge sharing: explanations per step ----------
+  // Steps that call Elasticsearch; everything else is plain TypeScript over data.
+  const ES_STEPS = new Set(['resolve', 'fromGenerator', 'availability', 'listResults', 'countResult', 'compare']);
+    const EXPLAIN = {
+    fromGenerator: ['The executor starts from the generator’s hand-off: the checked definition, the identity plan, and each source resolved to readable concrete indices.', 'Open the Generator tool to see each of these steps, the plans and the exact ES|QL.'],
+    definition: ['The definition is the whole contract: what the entity is (type, name), how to recognise one (identityField) and where to read it (dynamic.sources).', 'It is checked against the entity store schema and the inventory’s servable rules before anything runs, so a bad definition fails here with the rule named.'],
+    identity: ['The identity decides what one row is. Its fields become the BY keys, a presence filter keeps only documents that have them, and entity.id is built after grouping by prefixing the type.', 'With a ranking, every field of every composition is grouped on, and the id picks the first complete composition per row (CASE + COALESCE).'],
+    resolve: ['Each source pattern is expanded to its concrete indices, and each index reports its mode: time_series or standard.', 'Indices the user cannot read are removed first (_has_privileges), because ES|QL would silently skip them.'],
+    plans: ['A plan is one query target. time_series indices become a TS plan, everything else a FROM plan, TS first.', 'A source with only one mode keeps its pattern; a mixed source names its concrete indices so TS never sees a standard index.'],
+    columns: ['The output columns, in order: entity.id, the identity fields, one column per attribute name across all sources, then last_seen.', 'Two sources can fill the same column from different fields; this table shows which field each plan reads.'],
+    listQueries: ['One ES|QL list query per plan. Every line traces back to the definition; hover the legend to see which part produced which line.', 'Each plan asks for the full limit, because the newest entities overall may all come from one plan.'],
+    countQuery: ['One count query for the whole type, without a limit: it groups by the identity and counts groups.', 'With a composed or ranked identity it counts distinct ids, and raw_groups minus count is the number of id collisions.'],
+    availability: ['One field-caps call checks which fields each plan’s indices map. A plan is usable if one index maps every field of one identity composition.', 'A plan that could never build an id is dropped with its reason. Unmapped attribute fields stay and come back null.'],
+    listResults: ['The list queries run, one per usable plan, with the time window as named parameters.', 'Rows come back keyed by column name; a failed plan becomes a source error instead of failing the whole list.'],
+    countResult: ['The count query runs; its total decides whether the list is truncated.', 'If the count fails the list still returns, marked truncated, so the UI never claims a complete list it cannot prove.'],
+    labels: ['valueLabels turn raw values into canonical labels per plan, before the merge, so sources agree: OTel "2" and Agent "Running" both read running.', 'Unmapped values pass through as strings; null stays null.'],
+    merge: ['Rows from every plan are folded into one row per entity.id: attributes from the row with the newest last_seen, and a null never replaces a value.', 'Provenance records which source pattern each value came from.'],
+    final: ['The answer: ordered by last_seen (newest first, ties by id), cut to the limit, and every row filled with every column.', 'This is the shape the API returns to the UI.'],
+    compare: ['A safety net for the playground: the real listEntities runs on the same input, and its rows should equal the Final step.', 'If they differ, the playground has drifted from list_entities.ts.'],
+  };
+  const explainBox = (key) => {
+    const text = EXPLAIN[key];
+    if (!text || !$('explain').checked) return null;
+    const [plain, why] = text;
+    return h('div', { class: 'explain' }, h('span', { class: 'bulb', text: '💡' }),
+      h('div', {}, h('p', { text: plain }), h('p', { class: 'why', text: why })));
+  };
+
+  // ---------- ES|QL coloured by the part of the definition each line comes from ----------
+  const ESQL_KINDS = [
+    ['source', 'source', '#2e9e6b'], ['time', 'time window', '#8b96ab'], ['identity', 'identity', '#5b8def'],
+    ['attribute', 'attributes', '#7cc8a2'], ['lastseen', 'last_seen', '#e0a23d'], ['id', 'entity.id', '#f2c97d'], ['output', 'output', '#5c6b88'],
+  ];
+  const classifyEsql = (esql) => {
+    let section = 'meta';
+    return esql.split('\n').map((line) => {
+      const trimmed = line.trim();
+      const command = trimmed.startsWith('|') ? trimmed.slice(1).trim().split(/\s+/)[0].toUpperCase() : null;
+      if (/^SET\b/.test(trimmed)) return [line, 'meta'];
+      if (/^(FROM|TS)\b/.test(trimmed)) { section = 'source'; return [line, 'source']; }
+      if (command) section = command;
+      if (section === 'WHERE') {
+        if (line.includes('@timestamp')) return [line, 'time'];
+        if (line.includes('_index')) return [line, 'source'];
+        if (line.includes('TO_STRING(') && line.includes('!= ""')) return [line, 'identity'];
+        return [line, 'source'];
+      }
+      if (section === 'STATS') {
+        if (/COUNT\(/.test(line)) return [line, 'output'];
+        if (/^\s*BY\b/.test(line) || /^\|\s*STATS\s+BY\b/.test(trimmed)) return [line, 'identity'];
+        if (line.includes('last_seen')) return [line, 'lastseen'];
+        return [line, 'attribute'];
+      }
+      if (section === 'EVAL') return [line, 'id'];
+      return [line, 'output'];
+    });
+  };
+  const esqlView = (esql) => {
+    const pre = h('pre', { class: 'esql' }, classifyEsql(esql).map(([line, kind]) => h('span', { class: `line k-${kind}`, 'data-kind': kind, text: line || ' ' })));
+    const legend = h('div', { class: 'legend' }, ESQL_KINDS.map(([kind, label, color]) => {
+      const chipNode = h('span', { style: `--c:${color}`, text: label });
+      chipNode.addEventListener('mouseenter', () => {
+        pre.classList.add('focus');
+        pre.querySelectorAll('.line').forEach((n) => n.classList.toggle('on', n.dataset.kind === kind));
+      });
+      chipNode.addEventListener('mouseleave', () => pre.classList.remove('focus'));
+      return chipNode;
+    }));
+    return h('div', {}, legend, pre);
+  };
+
+  // ---------- sharing ----------
+  const toast = (text) => {
+    $('toast').textContent = text;
+    $('toast').classList.remove('hidden');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => $('toast').classList.add('hidden'), 1800);
+  };
+  const encodeShare = (value) => btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(value)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const decodeShare = (text) => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0))));
+  const shareLink = () => {
+    const payload = { definition: $('definition').value, tool: state.tool, step: state.activeTab[state.tool], minutes: $('minutes').value, limit: $('limit').value, preset: state.presetId };
+    return `${location.origin}${location.pathname}#s=${encodeShare(payload)}`;
+  };
+  const readShared = () => {
+    const match = location.hash.match(/^#s=(.+)$/);
+    if (!match) return null;
+    try { return decodeShare(match[1]); } catch { return null; }
+  };
+  const mdTable = (columns, rows) => [
+    `| ${columns.join(' | ')} |`,
+    `| ${columns.map(() => '---').join(' | ')} |`,
+    ...rows.map((row) => `| ${columns.map((c) => (row[c] === null || row[c] === undefined ? '' : String(row[c]).replace(/\|/g, '\\|'))).join(' | ')} |`),
+  ].join('\n');
+  const stepMarkdown = (step) => {
+    const [plain] = EXPLAIN[step.key] || [];
+    const head = [`### ${step.title}`, plain ? `_${plain}_` : null].filter(Boolean).join('\n\n');
+    if (step.error) return `${head}\n\n\`\`\`\n${step.error}\n\`\`\``;
+    const { data } = step;
+    if (step.key === 'listQueries') return `${head}\n\n${data.map((q) => `Plan ${q.plan.index} · ${q.plan.engine} · ${q.plan.indexPattern}\n\n\`\`\`esql\n${q.esql}\n\`\`\``).join('\n\n')}`;
+    if (step.key === 'countQuery') return `${head}\n\n\`\`\`esql\n${data.esql}\n\`\`\``;
+    if (data && Array.isArray(data.rows) && Array.isArray(data.columns)) return `${head}\n\n${mdTable(data.columns.map((c) => c.name), data.rows)}`;
+    return `${head}\n\n\`\`\`json\n${JSON.stringify(data, null, 2).slice(0, 4000)}\n\`\`\``;
+  };
+
+  // The executor repeats definition, identity and resolve from the generator; show them as one step.
+  const FOLDED = ['definition', 'identity', 'resolve'];
+  const foldGeneratorSteps = (steps) => {
+    const folded = steps.filter((s) => FOLDED.includes(s.key));
+    if (!folded.length) return steps;
+    const failedStep = folded.find((s) => s.error);
+    const byKey = Object.fromEntries(folded.map((s) => [s.key, s.data]));
+    const availability = steps.find((s) => s.key === 'availability')?.data;
+    const generatorStep = {
+      key: 'fromGenerator',
+      title: 'From the generator',
+      functions: 'definition · identity · resolve',
+      description: 'What the executor starts from: the checked definition, its identity plan and the resolved, readable indices. The Generator tool shows each of these as its own step.',
+      error: failedStep ? `${failedStep.title}: ${failedStep.error}` : undefined,
+      data: failedStep ? undefined : { ...byKey, plans: availability ? availability.plans.map(({ plan }) => plan) : [] },
+    };
+    return [generatorStep, ...steps.filter((s) => !FOLDED.includes(s.key))];
+  };
+
+  // ---------- render ----------
+  const render = () => {
+    const result = state.results[state.tool];
+    const tabs = $('tabs');
+    const panel = $('panel');
+    tabs.replaceChildren();
+    document.querySelectorAll('.tools button').forEach((b) => b.classList.toggle('active', b.dataset.tool === state.tool));
+    if (!result) {
+      $('status').textContent = TOOL_DESCRIPTIONS[state.tool];
+      panel.replaceChildren(h('div', { class: 'empty', text: 'Run to see every step.' }));
+      return;
+    }
+    if (result.error) {
+      $('status').textContent = TOOL_DESCRIPTIONS[state.tool];
+      panel.replaceChildren(errorBox(result.error));
+      return;
+    }
+    const steps = state.tool === 'execute' ? foldGeneratorSteps(result.steps) : result.steps;
+    const failed = steps.find((s) => s.error);
+    $('status').textContent = `${TOOL_DESCRIPTIONS[state.tool]}  ${failed ? `— stopped at “${failed.title}”` : `— ${steps.length} steps`}`;
+    let active = state.activeTab[state.tool];
+    if (!steps.some((s) => s.key === active)) active = (failed || steps[0]).key;
+    state.activeTab[state.tool] = active;
+    const select = (key) => { state.activeTab[state.tool] = key; render(); };
+    const stepButton = (s, i) => h('button', {
+      class: `${s.key === active ? 'active' : ''} ${s.error ? 'failed' : ''} ${ES_STEPS.has(s.key) ? 'es' : ''}`,
+      title: ES_STEPS.has(s.key) ? 'Calls Elasticsearch' : 'Plain TypeScript, no Elasticsearch call',
+      onclick: () => select(s.key),
+    }, h('span', { class: 'dot' }), h('span', { class: 'n', text: `${i + 1}` }), s.title + tabSummary(s));
+    // The generator's steps, or the generator's hand-off followed by the executor's own steps.
+    const lanes = state.tool === 'generate'
+      ? [['Generator', steps]]
+      : [['Generator', steps.filter((s) => s.key === 'fromGenerator')], ['Executor', steps.filter((s) => s.key !== 'fromGenerator')]];
+    lanes.forEach(([label, laneSteps]) => {
+      if (!laneSteps.length) return;
+      tabs.appendChild(h('div', { class: 'lane' }, h('span', { class: 'lane-label', text: label }),
+        h('div', { class: 'lane-steps' }, laneSteps.flatMap((s, i) => [i ? h('span', { class: 'arrow-sep', text: '→' }) : null, stepButton(s, steps.indexOf(s))]))));
+    });
+    tabs.appendChild(h('span', { class: 'es-legend' }, h('i'), 'calls Elasticsearch'));
+    const index = steps.findIndex((s) => s.key === active);
+    const step = steps[index];
+    const body = step.error ? [errorBox(step.error)] : [RENDER[step.key](step.data, steps)].flat(Infinity);
+    panel.replaceChildren(
+      h('div', { class: 'head' }, h('h2', { text: step.title }), h('span', { class: 'fn', text: step.functions })),
+      h('p', { class: 'desc', text: step.description }),
+      explainBox(step.key),
+      ...body,
+      h('div', { class: 'stepper' },
+        h('button', { text: `← ${steps[index - 1]?.title ?? 'Previous'}`, disabled: index === 0 ? '' : null, onclick: () => select(steps[index - 1].key) }),
+        h('span', { class: 'where', text: `step ${index + 1} of ${steps.length} · ← → keys move between steps` }),
+        h('button', { text: `${steps[index + 1]?.title ?? 'Next'} →`, disabled: index === steps.length - 1 ? '' : null, onclick: () => select(steps[index + 1].key) })),
+    );
+  };
+
+  // ---------- actions ----------
+  const run = async () => {
+    const button = $('run');
+    button.disabled = true;
+    $('status').textContent = 'Running…';
+    localStorage.setItem(STORAGE_KEY, $('definition').value);
+    const to = new Date();
+    const from = new Date(to.getTime() - Number($('minutes').value) * 60000);
+    try {
+      const response = await fetch(`/${state.tool}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ definition: $('definition').value, from: from.toISOString(), to: to.toISOString(), limit: Number($('limit').value), checkReadability: $('readability').checked }),
+      });
+      state.results[state.tool] = await response.json();
+    } catch (error) {
+      state.results[state.tool] = { error: String(error) };
+    } finally {
+      button.disabled = false;
+      render();
+    }
+  };
+
+  let runTimer;
+  // Edits re-run the active tool after a pause when auto-run is on.
+  const scheduleRun = () => {
+    if (!$('autorun').checked) return;
+    clearTimeout(runTimer);
+    $('status').textContent = 'Edited, re-running…';
+    runTimer = setTimeout(run, 600);
+  };
+
+  const loadDefault = async () => { $('definition').value = await (await fetch('/default-definition')).text(); };
+
+  // ---------- presets ----------
+  const activePreset = () => state.presets.find((p) => p.id === state.presetId);
+
+  // Options are built once; only the selection, the edited marker and the note change.
+  const buildPresetOptions = () => {
+    const groups = new Map();
+    state.presets.forEach((p) => groups.set(p.group, [...(groups.get(p.group) || []), p]));
+    $('preset').replaceChildren(
+      h('option', { value: '', text: '— custom definition —' }),
+      ...[...groups].map(([group, presets]) => h('optgroup', { label: group }, presets.map((p) => h('option', { value: p.id, text: p.label })))),
+    );
+  };
+
+  const renderPresets = () => {
+    const preset = activePreset();
+    $('preset').value = preset ? preset.id : '';
+    [...$('preset').options].forEach((o) => {
+      const p = state.presets.find((x) => x.id === o.value);
+      if (p) o.textContent = p.id === state.presetId && state.edited ? `${p.label} · edited` : p.label;
+    });
+    $('presetNote').replaceChildren(...(preset ? [
+      badge(preset.outcome === 'servable' ? 'servable' : 'rejected', preset.outcome === 'servable' ? 'green' : 'red'),
+      h('span', { text: preset.note }),
+    ] : [h('span', { text: 'Not a preset: edit freely, or pick one above.' })]));
+    $('definitionTitle').textContent = preset ? `${preset.label}${state.edited ? ' · edited' : ''}` : 'Definition';
+  };
+
+  const writeDefinition = (definition, { edited }) => {
+    $('definition').value = JSON.stringify(definition, null, 2);
+    state.edited = edited;
+    state.results = {};
+    localStorage.setItem(STORAGE_KEY, $('definition').value);
+    renderPresets();
+  };
+
+  const loadPreset = (id) => {
+    const preset = state.presets.find((p) => p.id === id);
+    if (!preset) return;
+    state.presetId = id;
+    state.stash = {};
+    state.labelsOpen = {};
+    localStorage.setItem(PRESET_KEY, id);
+    writeDefinition(preset.definition, { edited: false });
+    setMode('configure');
+    run();
+  };
+
+  // ---------- identity helpers ----------
+  const MAX_IDENTITY_FIELDS = 8;
+  const presence = (field) => ({ and: [{ field, exists: true }, { field, neq: '' }] });
+  const compositionFilter = (fields) => (fields.length === 1 ? presence(fields[0]) : { and: fields.map(presence) });
+  const fieldsOf = (composition) => composition.filter((part) => 'field' in part).map(({ field }) => field);
+  // The documentsFilter the inventory requires for a ranking, the same shape as getPresenceFilter.
+  const presenceFilterOf = (ranking) => {
+    const compositions = ranking.map(fieldsOf).filter((fields) => fields.length);
+    if (!compositions.length) return undefined;
+    return compositions.length === 1 ? compositionFilter(compositions[0]) : { or: compositions.map(compositionFilter) };
+  };
+  const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const identityKind = (identity = {}) => ('euidRanking' in identity ? 'ranking' : 'single');
+  const rankingOf = (identity) => identity.euidRanking?.branches?.[0]?.ranking || [];
+
+  // Rewrites the first branch's ranking and keeps documentsFilter in step, unless it was already custom.
+  const editRanking = (change) => editDefinition((d) => {
+    const identity = d.identityField;
+    identity.euidRanking = identity.euidRanking || { branches: [] };
+    if (!identity.euidRanking.branches.length) identity.euidRanking.branches.push({ ranking: [] });
+    const { ranking } = identity.euidRanking.branches[0];
+    const inSync = sameJson(identity.documentsFilter, presenceFilterOf(ranking));
+    change(ranking);
+    if (inSync) identity.documentsFilter = presenceFilterOf(ranking);
+  });
+
+  // Switching keeps the other shape aside, so toggling back restores it.
+  const switchIdentity = (kind) => editDefinition((d) => {
+    const current = d.identityField || {};
+    if (identityKind(current) === kind) return;
+    state.stash[identityKind(current)] = current;
+    const { skipTypePrepend } = current;
+    const firstField = current.singleField || fieldsOf(rankingOf(current)[0] || [])[0] || '';
+    const next = state.stash[kind] || (kind === 'single'
+      ? { singleField: firstField }
+      : { euidRanking: { branches: [{ ranking: [[{ field: firstField }]] }] }, documentsFilter: presence(firstField) });
+    d.identityField = { ...next, ...(skipTypePrepend === undefined ? {} : { skipTypePrepend }) };
+  });
+
+  const idPreview = (definition) => {
+    const identity = definition.identityField || {};
+    const prefix = identity.skipTypePrepend ? '' : `${definition.type || '<type>'}:`;
+    const lines = identityKind(identity) === 'single'
+      ? [[{ field: identity.singleField || '…' }]]
+      : rankingOf(identity);
+    return h('div', { class: 'preview' },
+      h('div', { class: 'preview-title', text: 'entity.id' }),
+      ...lines.map((composition, ci) => h('div', { class: 'preview-line' },
+        lines.length > 1 ? h('span', { class: 'rank', text: ci === 0 ? 'if' : 'else' }) : null,
+        h('code', {}, h('span', { class: 'p-prefix', text: prefix }),
+          composition.map((part) => ('field' in part
+            ? h('span', { class: 'p-field', text: `{${part.field || '…'}}` })
+            : h('span', { class: 'p-sep', text: part.sep })))))));
+  };
+
+  // ---------- configure: a form over the JSON, which stays the source of truth ----------
+  const parseText = () => { try { return { definition: JSON.parse($('definition').value) }; } catch (error) { return { error: String(error) }; } };
+
+  // Every edit re-renders the form; the focused input is found again by its key.
+  const editDefinition = (change) => {
+    const { definition } = parseText();
+    if (!definition) return;
+    change(definition);
+    writeDefinition(definition, { edited: true });
+    renderConfigure();
+    scheduleRun();
+  };
+
+  const input = (key, value, oninput, attrs = {}) => {
+    const node = h('input', { type: 'text', spellcheck: 'false', 'data-key': key, ...attrs });
+    node.value = value ?? '';
+    node.addEventListener('input', () => oninput(node.value));
+    return node;
+  };
+
+  const section = (id, title, meta, ...body) => {
+    const node = h('details', { class: 'section', ...(state.closed[id] ? {} : { open: '' }) },
+      h('summary', {}, h('span', { class: 'section-title', text: title }), meta), ...body);
+    node.addEventListener('toggle', () => { state.closed[id] = !node.open; });
+    return node;
+  };
+
+  const warn = (text, ...actions) => h('div', { class: 'warn' }, h('span', { text }), ...actions);
+  const toggle = (label, checked, onchange) => {
+    const box = h('input', { type: 'checkbox' });
+    box.checked = checked;
+    box.addEventListener('change', () => onchange(box.checked));
+    return h('label', { class: 'toggle' }, box, h('span', { class: 'track' }), h('span', { text: label }));
+  };
+  const segmented = (options, value, onselect) => h('div', { class: 'seg seg-lg' },
+    options.map(([key, label]) => h('button', { class: key === value ? 'active' : '', text: label, onclick: () => key !== value && onselect(key) })));
+
+  const partNode = (part, ci, pi, composition) => {
+    const isField = 'field' in part;
+    const flip = () => editRanking((r) => { r[ci][pi] = isField ? { sep: part.field ? '/' : '-' } : { field: '' }; });
+    return h('div', { class: `part ${isField ? 'part-field' : 'part-sep'}` },
+      h('button', { class: 'part-kind', title: isField ? 'Field — click to make it a separator' : 'Separator — click to make it a field', text: isField ? 'field' : 'sep', onclick: flip }),
+      input(`c${ci}p${pi}`, isField ? part.field : part.sep, (v) => editRanking((r) => { r[ci][pi] = isField ? { field: v } : { sep: v }; }),
+        { placeholder: isField ? 'field.path' : '/', size: String(Math.max(3, (isField ? part.field : part.sep).length + 1)) }),
+      composition.length > 1 ? h('button', { class: 'part-x', title: 'Remove part', text: '×', onclick: () => editRanking((r) => { r[ci].splice(pi, 1); }) }) : null);
+  };
+
+  const compositionNode = (composition, ci, ranking) => {
+    const fields = fieldsOf(composition);
+    const issues = [
+      !fields.length && 'needs at least one field (schema)',
+      composition[0] && 'sep' in composition[0] && 'starts with a separator: the id compiler rejects it',
+      fields.includes('last_seen') && '"last_seen" is the inventory\'s own column',
+    ].filter(Boolean);
+    const move = (to) => editRanking((r) => { r.splice(to, 0, r.splice(ci, 1)[0]); });
+    return h('div', { class: `composition${issues.length ? ' has-issue' : ''}` },
+      h('div', { class: 'composition-head' },
+        h('span', { class: 'rank-badge', text: `#${ci + 1}` }),
+        h('span', { class: 'muted', text: ci === 0 ? 'tried first' : `if #${ci} is missing` }),
+        h('span', { class: 'spacer' }),
+        h('button', { class: 'icon-btn', title: 'Move up', text: '↑', disabled: ci === 0 ? '' : null, onclick: () => move(ci - 1) }),
+        h('button', { class: 'icon-btn', title: 'Move down', text: '↓', disabled: ci === ranking.length - 1 ? '' : null, onclick: () => move(ci + 1) }),
+        h('button', { class: 'icon-btn danger', title: 'Remove composition', text: '✕', onclick: () => editRanking((r) => { r.splice(ci, 1); }) })),
+      h('div', { class: 'parts' },
+        composition.map((part, pi) => partNode(part, ci, pi, composition)),
+        h('button', { class: 'add-part', text: '+ field', onclick: () => editRanking((r) => { r[ci].push({ field: '' }); }) }),
+        h('button', { class: 'add-part', text: '+ sep', onclick: () => editRanking((r) => { r[ci].push({ sep: '/' }); }) })),
+      ...issues.map((text) => h('div', { class: 'issue', text })));
+  };
+
+  const identityNode = (definition) => {
+    const identity = definition.identityField || {};
+    const kind = identityKind(identity);
+    const ranking = rankingOf(identity);
+    const branches = identity.euidRanking?.branches || [];
+    const distinctFields = [...new Set(kind === 'single' ? [identity.singleField] : ranking.flatMap(fieldsOf))].filter(Boolean);
+    const filterInSync = kind === 'single' || sameJson(identity.documentsFilter, presenceFilterOf(ranking));
+    return section('identity', 'Identity',
+      h('span', { class: 'summary-meta' }, badge(kind === 'single' ? 'single field' : `${ranking.length} ranked`, 'blue'),
+        badge(`${distinctFields.length}/${MAX_IDENTITY_FIELDS} fields`, distinctFields.length > MAX_IDENTITY_FIELDS ? 'red' : 'grey')),
+      h('div', { class: 'identity-bar' },
+        segmented([['single', 'Single field'], ['ranking', 'Ranking']], kind, switchIdentity),
+        toggle('prepend type to id', !identity.skipTypePrepend, (on) => editDefinition((d) => {
+          if (on) delete d.identityField.skipTypePrepend; else d.identityField.skipTypePrepend = true;
+        }))),
+      'singleField' in identity && 'euidRanking' in identity
+        ? warn('Both singleField and euidRanking are set; the schema accepts only one.',
+          h('button', { class: 'link', text: 'Drop singleField', onclick: () => editDefinition((d) => { delete d.identityField.singleField; }) }))
+        : null,
+      kind === 'single'
+        ? h('div', { class: 'parts single' }, h('div', { class: 'part part-field' }, h('span', { class: 'part-kind static', text: 'field' }),
+          input('single', identity.singleField, (v) => editDefinition((d) => { d.identityField.singleField = v; }), { placeholder: 'k8s.pod.uid', class: 'wide' })))
+        : h('div', { class: 'ranking' },
+          branches.length > 1 || branches[0]?.when
+            ? warn(`${branches.length > 1 ? `${branches.length} branches` : 'A "when" condition'}: only the first branch's ranking is editable here; the inventory serves one unconditional branch.`,
+              h('button', { class: 'link', text: 'Keep first branch only', onclick: () => editDefinition((d) => {
+                const [{ ranking: first = [] } = {}] = d.identityField.euidRanking.branches;
+                d.identityField.euidRanking.branches = [{ ranking: first }];
+              }) }))
+            : null,
+          ranking.length ? null : h('div', { class: 'muted empty-ranking', text: 'No compositions: the schema needs at least one.' }),
+          ranking.map((composition, ci) => compositionNode(composition, ci, ranking)),
+          h('button', { class: 'add-row', text: '+ composition (fallback)', onclick: () => editRanking((r) => { r.push([{ field: '' }]); }) })),
+      identity.fieldEvaluations?.length
+        ? warn(`${identity.fieldEvaluations.length} fieldEvaluations: the inventory never computes ids per document.`,
+          h('button', { class: 'link', text: 'Remove', onclick: () => editDefinition((d) => { delete d.identityField.fieldEvaluations; }) }))
+        : null,
+      kind === 'ranking'
+        ? h('div', { class: `filter-status ${filterInSync ? 'in-sync' : 'custom'}` },
+          h('span', { text: filterInSync ? '✓ documentsFilter follows the ranking' : '✕ documentsFilter is not the presence filter of the ranking' }),
+          filterInSync ? null : h('button', { class: 'link', text: 'Use presence filter', onclick: () => editDefinition((d) => { d.identityField.documentsFilter = presenceFilterOf(rankingOf(d.identityField)); }) }))
+        : null,
+      idPreview(definition));
+  };
+
+  // valueLabels: raw value (stringified) → label; unmapped values pass through. Kept in entry order.
+  const MAX_VALUE_LABELS = 64;
+  const MAX_VALUE_LABEL_LENGTH = 256;
+  const valueLabelsNode = (attribute, si, ai) => {
+    const entries = Object.entries(attribute.valueLabels || {});
+    const write = (next) => editDefinition((d) => {
+      const target = d.dynamic.sources[si].attributes[ai];
+      if (next.length) target.valueLabels = Object.fromEntries(next); else delete target.valueLabels;
+    });
+    // Two entries with one raw value would collapse into one, so a duplicate is flagged and not written.
+    const rename = (i, raw, node) => {
+      if (entries.some(([key], j) => j !== i && key === raw)) {
+        node.classList.add('invalid');
+        node.title = `"${raw}" is already mapped`;
+        return;
+      }
+      write(entries.map((entry, j) => (j === i ? [raw, entry[1]] : entry)));
+    };
+    const full = entries.length >= MAX_VALUE_LABELS;
+    const pending = entries.some(([key]) => key === '');
+    return h('div', { class: 'labels' },
+      h('div', { class: 'labels-head' },
+        h('span', { text: `value labels for ${attribute.name || 'this attribute'}` }),
+        h('span', { class: 'muted', text: `${entries.length}/${MAX_VALUE_LABELS} · unmapped values pass through` })),
+      entries.length ? null : h('div', { class: 'muted', text: 'No labels: every raw value is shown as is.' }),
+      ...entries.map(([raw, label], i) => {
+        const rawInput = input(`s${si}a${ai}raw${i}`, raw, (v) => rename(i, v, rawInput), { placeholder: 'raw value', maxlength: String(MAX_VALUE_LABEL_LENGTH) });
+        return h('div', { class: 'label-row' },
+          rawInput,
+          h('span', { class: 'arrow', text: '→' }),
+          input(`s${si}a${ai}label${i}`, label, (v) => write(entries.map((entry, j) => (j === i ? [entry[0], v] : entry))), { placeholder: 'label', maxlength: String(MAX_VALUE_LABEL_LENGTH) }),
+          h('button', { class: 'icon-btn danger', title: 'Remove label', text: '✕', onclick: () => write(entries.filter((_, j) => j !== i)) }));
+      }),
+      h('div', { class: 'labels-actions' },
+        h('button', { class: 'add-part', text: '+ label', disabled: full || pending ? '' : null,
+          title: full ? `At most ${MAX_VALUE_LABELS} labels` : pending ? 'Fill in the empty raw value first' : null,
+          onclick: () => {
+            state.focusNext = `s${si}a${ai}raw${entries.length}`;
+            write([...entries, ['', '']]);
+          } }),
+        entries.length ? h('button', { class: 'link danger-link', text: 'Clear all', onclick: () => write([]) }) : null));
+  };
+
+  const sourceNode = (source, si) => h('div', { class: 'source' },
+    h('div', { class: 'composition-head' },
+      h('span', { class: 'rank-badge src', text: `S${si}` }),
+      h('span', { class: 'source-title', text: source.indexPattern || 'no index pattern' }),
+      h('span', { class: 'spacer' }),
+      h('button', { class: 'icon-btn danger', title: 'Remove source', text: '✕', onclick: () => editDefinition((d) => { d.dynamic.sources.splice(si, 1); }) })),
+    h('label', { class: 'field' }, 'index pattern',
+      input(`s${si}index`, source.indexPattern, (v) => editDefinition((d) => { d.dynamic.sources[si].indexPattern = v; }), { required: 'required' })),
+    h('label', { class: 'field' }, 'ES|QL filter (optional)',
+      input(`s${si}filter`, source.filter, (v) => editDefinition((d) => {
+        if (v.trim()) d.dynamic.sources[si].filter = v; else delete d.dynamic.sources[si].filter;
+      }), { placeholder: 'metricset.name == "pod"' })),
+    h('div', { class: 'field-label', text: `attributes (${(source.attributes || []).length}) — column ← field` }),
+    ...(source.attributes || []).map((attribute, ai) => {
+      const open = state.labelsOpen[`s${si}a${ai}`];
+      const count = Object.keys(attribute.valueLabels || {}).length;
+      return h('div', { class: `attribute${open ? ' open' : ''}` },
+        h('div', { class: 'attr' },
+          input(`s${si}a${ai}name`, attribute.name, (v) => editDefinition((d) => { d.dynamic.sources[si].attributes[ai].name = v; }), { placeholder: 'column' }),
+          h('span', { class: 'arrow', text: '←' }),
+          input(`s${si}a${ai}field`, attribute.field, (v) => editDefinition((d) => { d.dynamic.sources[si].attributes[ai].field = v; }), { placeholder: 'field' }),
+          h('button', { class: `labels-btn${count ? ' has' : ''}${open ? ' active' : ''}`, title: 'Value labels: raw value → label', onclick: () => {
+            state.labelsOpen[`s${si}a${ai}`] = !open;
+            renderConfigure();
+          } }, 'labels', count ? h('span', { class: 'count', text: String(count) }) : null),
+          h('button', { class: 'icon-btn danger', title: 'Remove attribute', text: '✕', onclick: () => editDefinition((d) => {
+            d.dynamic.sources[si].attributes.splice(ai, 1);
+            if (!d.dynamic.sources[si].attributes.length) delete d.dynamic.sources[si].attributes;
+          }) })),
+        open ? valueLabelsNode(attribute, si, ai) : null);
+    }),
+    h('button', { class: 'add-part', text: '+ attribute', onclick: () => editDefinition((d) => {
+      d.dynamic.sources[si].attributes = [...(d.dynamic.sources[si].attributes || []), { name: '', field: '' }];
+    }) }));
+
+  const renderConfigure = () => {
+    const { definition, error } = parseText();
+    if (!definition) {
+      $('configure').replaceChildren(errorBox(`The JSON does not parse; fix it in the JSON tab.\n${error}`));
+      return;
+    }
+    const focused = state.focusNext || document.activeElement?.dataset?.key;
+    state.focusNext = null;
+    const caret = focused ? document.activeElement.selectionStart : null;
+    const sources = definition.dynamic?.sources || [];
+    $('configure').replaceChildren(
+      section('entity', 'Entity', h('span', { class: 'summary-meta' }, h('code', { class: 'summary-code', text: definition.type || '—' })),
+        h('div', { class: 'row' },
+          h('label', { class: 'field' }, 'type', input('type', definition.type, (v) => editDefinition((d) => { d.type = v; }))),
+          h('label', { class: 'field' }, 'name', input('name', definition.name, (v) => editDefinition((d) => { d.name = v; }))))),
+      identityNode(definition),
+      section('sources', 'Sources', h('span', { class: 'summary-meta' }, badge(String(sources.length), 'grey')),
+        ...sources.map(sourceNode),
+        h('button', { class: 'add-row', text: '+ source', onclick: () => editDefinition((d) => {
+          d.dynamic = d.dynamic || { sources: [] };
+          d.dynamic.sources.push({ indexPattern: '' });
+        }) })),
+    );
+    if (!focused) return;
+    const node = $('configure').querySelector(`[data-key="${focused}"]`);
+    if (!node) return;
+    node.focus();
+    if (caret !== null && caret !== undefined) node.setSelectionRange(caret, caret);
+  };
+
+  const setMode = (mode) => {
+    state.mode = mode;
+    document.querySelectorAll('.seg button').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+    $('configure').classList.toggle('hidden', mode !== 'configure');
+    $('definition').classList.toggle('hidden', mode !== 'json');
+    if (mode === 'configure') renderConfigure();
+  };
+
+  document.querySelectorAll('.tools button').forEach((b) => b.addEventListener('click', () => {
+    state.tool = b.dataset.tool;
+    if (state.results[state.tool]) render(); else run();
+  }));
+  $('run').onclick = run;
+  $('reset').onclick = () => {
+    if (activePreset()) return loadPreset(state.presetId);
+    loadDefault().then(() => { state.results = {}; setMode(state.mode); run(); });
+  };
+  document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  $('preset').addEventListener('change', (e) => {
+    if (e.target.value) loadPreset(e.target.value);
+    else { state.presetId = null; localStorage.removeItem(PRESET_KEY); state.edited = false; renderPresets(); }
+  });
+  // An edited definition makes both tools' results stale.
+  $('definition').addEventListener('input', () => {
+    const other = state.tool === 'generate' ? 'execute' : 'generate';
+    delete state.results[other];
+    state.edited = true;
+    renderPresets();
+    scheduleRun();
+  });
+  document.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') run(); });
+  // ← → walk the steps, unless the user is typing.
+  document.addEventListener('keydown', (e) => {
+    if (!['ArrowLeft', 'ArrowRight'].includes(e.key) || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+    const buttons = [...document.querySelectorAll('.stepper button')];
+    const target = e.key === 'ArrowLeft' ? buttons[0] : buttons[1];
+    if (target && !target.disabled) target.click();
+  });
+  $('explain').addEventListener('change', () => { localStorage.setItem(EXPLAIN_KEY, $('explain').checked ? '1' : '0'); render(); });
+  $('share').onclick = async () => { await navigator.clipboard.writeText(shareLink()); toast('Link copied: it opens this definition on this step'); };
+  $('copyStep').onclick = async () => {
+    const result = state.results[state.tool];
+    if (!result?.steps) return toast('Run first');
+    const steps = state.tool === 'execute' ? foldGeneratorSteps(result.steps) : result.steps;
+    const step = steps.find((x) => x.key === state.activeTab[state.tool]);
+    if (!step) return;
+    await navigator.clipboard.writeText(stepMarkdown(step));
+    toast(`“${step.title}” copied as Markdown`);
+  };
+
+  (async () => {
+    state.presets = await (await fetch('/presets')).json();
+    buildPresetOptions();
+    const savedPreset = localStorage.getItem(PRESET_KEY);
+    state.presetId = state.presets.some((p) => p.id === savedPreset) ? savedPreset : null;
+    $('explain').checked = localStorage.getItem(EXPLAIN_KEY) !== '0';
+    const shared = readShared();
+    const saved = shared ? shared.definition : localStorage.getItem(STORAGE_KEY);
+    if (shared) {
+      state.presetId = state.presets.some((p) => p.id === shared.preset) ? shared.preset : null;
+      state.tool = shared.tool === 'execute' ? 'execute' : 'generate';
+      if (shared.step) state.activeTab[state.tool] = shared.step;
+      if (shared.minutes) $('minutes').value = shared.minutes;
+      if (shared.limit) $('limit').value = shared.limit;
+      history.replaceState(null, '', location.pathname);
+    }
+    if (saved) {
+      $('definition').value = saved;
+      const preset = activePreset();
+      const { definition } = parseText();
+      state.edited = Boolean(preset) && JSON.stringify(definition) !== JSON.stringify(preset.definition);
+    } else if (state.presets.length) {
+      state.presetId = state.presets[0].id;
+      $('definition').value = JSON.stringify(state.presets[0].definition, null, 2);
+    } else {
+      await loadDefault();
+    }
+    renderPresets();
+    setMode('configure');
+    run();
+  })();
+</script>
+</body>
+</html>
