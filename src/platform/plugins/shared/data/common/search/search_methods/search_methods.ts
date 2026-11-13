@@ -418,7 +418,16 @@ export class SearchMethodsService implements ISearchMethods {
         locale: params.locale,
         dropNullColumns: params.dropNullColumns,
         include_execution_metadata: params.includeExecutionMetadata,
-        ...(params.columnMetadata ? { settings: { column_metadata: true } } : {}),
+        // POC(exemplars): request-body query settings already exist as a transport, so the
+        // exemplars setting needs no rewriting of the query string.
+        ...(params.columnMetadata || params.exemplars
+          ? {
+              settings: {
+                ...(params.columnMetadata ? { column_metadata: true } : {}),
+                ...(params.exemplars ? { exemplars: true } : {}),
+              },
+            }
+          : {}),
       },
     };
   }

@@ -238,6 +238,14 @@ export interface IEsqlSearchParams extends BaseSearchParams {
   filter?: estypes.QueryDslQueryContainer | estypes.QueryDslQueryContainer[];
 
   /**
+   * POC(exemplars): when true, sends the `exemplars` ES|QL query setting. Elasticsearch then does
+   * NOT execute the `TS ... | STATS` / `PROMQL` query and returns the exemplars of the metrics it
+   * aggregates instead: @timestamp, metric_name, value, trace_id, span_id, _source.
+   * Snapshot-only in Elasticsearch (capability `exemplars_setting_development_v8`).
+   */
+  exemplars?: boolean;
+
+  /**
    * Time zone for date calculations. Defaults to the `dateFormat:tz` advanced setting.
    */
   timeZone?: string;

@@ -38,6 +38,7 @@ interface Arguments {
   titleForInspector?: string;
   descriptionForInspector?: string;
   ignoreGlobalFilters?: boolean;
+  exemplars?: boolean; // POC(exemplars)
 }
 
 export type EsqlExpressionFunctionDefinition = ExpressionFunctionDefinition<
@@ -106,6 +107,15 @@ export const getEsqlFn = ({ getStartDependencies }: EsqlFnArguments) => {
           defaultMessage: 'Whether to ignore or use global query and filters',
         }),
       },
+      // POC(exemplars)
+      exemplars: {
+        types: ['boolean'],
+        default: false,
+        help: i18n.translate('data.search.esql.exemplars.help', {
+          defaultMessage:
+            'Return the exemplars of the metrics this query aggregates instead of the query result',
+        }),
+      },
     },
     allowCache: {
       withSideEffects: (_, { inspectorAdapters }) => {
@@ -114,7 +124,15 @@ export const getEsqlFn = ({ getStartDependencies }: EsqlFnArguments) => {
     },
     async fn(
       input,
-      { query, timeField, locale, titleForInspector, descriptionForInspector, ignoreGlobalFilters },
+      {
+        query,
+        timeField,
+        locale,
+        titleForInspector,
+        descriptionForInspector,
+        ignoreGlobalFilters,
+        exemplars,
+      },
       { abortSignal, inspectorAdapters, getKibanaRequest, getSearchSessionId, getExecutionContext }
     ) {
       const { searchService } = await getStartDependencies(() => {
@@ -166,6 +184,7 @@ export const getEsqlFn = ({ getStartDependencies }: EsqlFnArguments) => {
           },
           approximation: input?.isApproximate,
           projectRouting: input?.projectRouting,
+          exemplars, // POC(exemplars)
           dropNullColumns: true,
           includeExecutionMetadata: true,
           columnMetadata: true,

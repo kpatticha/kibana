@@ -38,6 +38,10 @@ import {
   Direction,
   Tooltip,
   LEGACY_LIGHT_THEME,
+  // POC(exemplars)
+  BubbleSeries,
+  ScaleType,
+  PointShape,
 } from '@elastic/charts';
 import { partition } from 'lodash';
 import { type IconType } from '@elastic/eui';
@@ -250,8 +254,38 @@ export function XYChart({
     splitRowAccessor,
     singleTable,
     annotations,
+    exemplars, // POC(exemplars)
     pointVisibility,
   } = args;
+
+  // POC(exemplars): the exemplars table comes back as
+  // @timestamp | metric_name | value | trace_id | span_id | _source, newest first.
+  const exemplarPoints = useMemo(() => {
+    if (!exemplars?.rows?.length) {
+      return [];
+    }
+    const timeColumn =
+      exemplars.columns.find(({ id, name }) => id === '@timestamp' || name === '@timestamp') ??
+      exemplars.columns.find(({ meta }) => meta.type === 'date');
+    const valueColumn =
+      exemplars.columns.find(({ id, name }) => id === 'value' || name === 'value') ??
+      exemplars.columns.find(({ meta }) => meta.type === 'number');
+    if (!timeColumn || !valueColumn) {
+      return [];
+    }
+    return exemplars.rows
+      .map((row) => ({
+        x:
+          typeof row[timeColumn.id] === 'string'
+            ? Date.parse(row[timeColumn.id])
+            : row[timeColumn.id],
+        y: row[valueColumn.id],
+        traceId: row.trace_id ?? null,
+        spanId: row.span_id ?? null,
+        metricName: row.metric_name ?? null,
+      }))
+      .filter(({ x, y }) => Number.isFinite(x) && Number.isFinite(y));
+  }, [exemplars]);
   const chartRef = useRef<Chart>(null);
   const chartBaseTheme = chartsThemeService.useChartsBaseTheme();
   const darkMode = useKibanaIsDarkMode();
@@ -1136,6 +1170,34 @@ export function XYChart({
                 pointVisibility={pointVisibility}
               />
             )}
+            {/* POC(exemplars): one overlay series, drawn at the exemplar's own time and value.
+                It is pinned to the first y-axis group on purpose, so the scale mismatch against
+                an aggregated series (e.g. SUM(RATE(...))) is visible rather than hidden. */}
+            {exemplarPoints.length ? (
+              <BubbleSeries
+                id="exemplars"
+                name={i18n.translate('expressionXY.exemplars.seriesName', {
+                  defaultMessage: 'Exemplars',
+                })}
+                groupId={yAxesConfiguration[0]?.groupId}
+                xScaleType={isTimeVis ? ScaleType.Time : ScaleType.Linear}
+                yScaleType={ScaleType.Linear}
+                xAccessor="x"
+                yAccessors={['y']}
+                data={exemplarPoints}
+                color="#f08c00"
+                bubbleSeriesStyle={{
+                  point: {
+                    shape: PointShape.Diamond,
+                    radius: 5,
+                    opacity: 1,
+                    strokeWidth: 1,
+                    fill: '#f08c00',
+                    stroke: '#e8590c',
+                  },
+                }}
+              />
+            ) : null}
             {referenceLineLayers.length ? (
               <ReferenceLines
                 layers={referenceLineLayers}

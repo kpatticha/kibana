@@ -296,6 +296,7 @@ export interface LayeredXYArgs {
   valueLabels: ValueLabelMode;
   layers?: XYExtendedLayerConfigResult[];
   annotations?: ExpressionAnnotationResult;
+  exemplars?: Datatable; // POC(exemplars)
   fittingFunction?: FittingFunction;
   fillOpacity?: number;
   areaFill?: AreaFillOption;
@@ -340,6 +341,7 @@ export interface XYProps {
   showTooltip: boolean;
   singleTable?: boolean;
   annotations?: ExpressionAnnotationResult;
+  exemplars?: Datatable; // POC(exemplars)
   pointVisibility?: PointVisibility;
   axisFormatPolicies?: AxisFormatPolicy[];
 }

@@ -346,7 +346,15 @@ export const buildXYExpression = (
         : undefined,
   });
 
+  // POC(exemplars): derive the exemplar fetch from the first data layer's OWN expression, by
+  // cloning its `esql` chain and flipping the setting on. Nothing is stored in the state, and the
+  // exemplar query can never drift from the metric query because it IS the metric query.
+  const exemplarsAst = buildExemplarsFetchAst(
+    datasourceExpressionsByLayers[validDataLayers[0]?.layerId]
+  );
+
   const layeredXyVisFn = buildExpressionFunction<LayeredXyVisFn>('layeredXyVis', {
+    ...(exemplarsAst ? { exemplars: exemplarsAst } : {}),
     legend: buildExpression([legendConfigFn]).toAst(),
     fittingFunction: state.fittingFunction ?? FittingFunctions.LINEAR,
     endValue: state.endValue ?? 'None',
@@ -464,6 +472,51 @@ const annotationLayerToExpression = (
     }
   );
   return buildExpression([extendedAnnotationLayerFn]).toAst();
+};
+
+/**
+ * POC(exemplars). Returns a clone of the layer's own fetch expression with the `exemplars`
+ * setting on, or undefined when the layer does not qualify.
+ *
+ * Elasticsearch accepts the setting only for a query with exactly one `TS ... | STATS` or
+ * `PROMQL` command, so this screens for that first. The real thing must use the ES|QL parser
+ * (`@kbn/esql-ast`) instead of this regex, and must also feature-detect the
+ * `exemplars_setting_development_v8` capability, which is snapshot-only today.
+ */
+const buildExemplarsFetchAst = (layerAst?: Ast): Ast | undefined => {
+  if (!layerAst) {
+    return undefined;
+  }
+  const esqlFnIndex = layerAst.chain.findIndex(({ function: fn }) => fn === 'esql');
+  if (esqlFnIndex === -1) {
+    return undefined;
+  }
+  const query = layerAst.chain[esqlFnIndex].arguments.query?.[0];
+  if (typeof query !== 'string') {
+    return undefined;
+  }
+  const isTimeSeriesQuery = /^\s*TS\s/i.test(query) || /^\s*PROMQL\s/i.test(query);
+  const hasOneStats = (query.match(/\|\s*STATS\s/gi) ?? []).length === 1;
+  if (!isTimeSeriesQuery || (!hasOneStats && !/^\s*PROMQL\s/i.test(query))) {
+    return undefined;
+  }
+
+  // Keep only the fetch, not Lens's column mapping: the exemplar columns are not the layer's.
+  return {
+    ...layerAst,
+    chain: layerAst.chain.slice(0, esqlFnIndex + 1).map((fn, index) =>
+      index === esqlFnIndex
+        ? {
+            ...fn,
+            arguments: {
+              ...fn.arguments,
+              exemplars: [true],
+              titleForInspector: ['Exemplars'],
+            },
+          }
+        : fn
+    ),
+  };
 };
 
 const dataLayerToExpression = (

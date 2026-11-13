@@ -39,6 +39,14 @@ export const layeredXyVisFunction: LayeredXyVisFn = {
         defaultMessage: 'Annotations',
       }),
     },
+    // POC(exemplars): a separately fetched table, like `annotations` above, drawn as markers
+    // at the exemplar's own (time, value).
+    exemplars: {
+      types: ['datatable'],
+      help: i18n.translate('expressionXY.layeredXyVis.exemplars.help', {
+        defaultMessage: 'Exemplars to overlay on the chart',
+      }),
+    },
     splitColumnAccessor: {
       types: ['vis_dimension', 'string'],
       help: strings.getSplitColumnAccessorHelp(),
