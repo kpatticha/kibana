@@ -18,6 +18,7 @@ import type {
   Provenance,
   SourceError,
   UnavailableColumn,
+  UnsupportedMetric,
 } from '../../common';
 import { InventoryTypeDefinitionError } from '../inventory/errors/inventory_type_definition_error';
 import { InventoryTypeNotFoundError } from '../inventory/errors/inventory_type_not_found_error';
@@ -45,6 +46,7 @@ import {
   resolveIdentityPlan,
 } from '../inventory/generator';
 import type { GeneratedQuery, IdentityPlan, OutputColumn, QueryPlan } from '../inventory/generator';
+import { listSkippedMetricsOnPlan } from '../inventory/generator/metrics/utils';
 import type { ListRequest } from '../inventory/types';
 import { toTypeColumns } from './type_columns';
 
@@ -103,6 +105,9 @@ const toResponseColumns = (columns: OutputColumn[]): InventoryTypeColumn[] =>
     ...(agg !== undefined ? { agg } : {}),
     ...(unit !== undefined ? { unit } : {}),
   }));
+
+const unsupportedMetricsForPlans = (plans: QueryPlan[]): UnsupportedMetric[] =>
+  plans.flatMap((plan) => listSkippedMetricsOnPlan(plan));
 
 const restrictProvenance = (provenance: Provenance, rows: InventoryRow[]): Provenance =>
   Object.fromEntries(
@@ -216,6 +221,7 @@ export class InventoryService {
       ),
       errors,
       unavailableColumns,
+      unsupportedMetrics: unsupportedMetricsForPlans(plans),
     };
   };
 
@@ -244,6 +250,7 @@ export class InventoryService {
         request: toEsqlRequestBody(queries[position]),
       })),
       errors: probeErrors,
+      unsupportedMetrics: unsupportedMetricsForPlans(plans),
     };
   };
 
