@@ -25,8 +25,14 @@ export const toTypeColumns = (
   displayLabels: readonly DynamicDisplayLabel[] = []
 ): InventoryTypeColumn[] => {
   const authored = new Map(displayLabels.map(({ name, label }) => [name, label]));
-  return columns.map(({ name, kind }) => {
+  return columns.map(({ name, kind, agg, unit }) => {
     const label = authored.get(name) ?? DEFAULT_COLUMN_LABELS.get(name);
-    return label === undefined ? { name, kind } : { name, kind, label };
+    return {
+      name,
+      kind,
+      ...(label !== undefined ? { label } : {}),
+      ...(agg !== undefined ? { agg } : {}),
+      ...(unit !== undefined ? { unit } : {}),
+    };
   });
 };
