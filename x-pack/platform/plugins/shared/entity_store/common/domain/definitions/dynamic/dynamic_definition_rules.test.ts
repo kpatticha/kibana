@@ -11,7 +11,11 @@ import { MAX_DYNAMIC_IDENTITY_FIELDS, type DynamicBlock } from './dynamic_block_
 import { isNotEmptyCondition } from '../common_fields';
 import {
   DISPLAY_LABEL_RULE,
+  METRIC_CONSISTENCY_RULE,
+  METRIC_NAME_RULE,
   NO_IDENTITY_ATTRIBUTE_RULE,
+  NO_IDENTITY_METRIC_RULE,
+  RESERVED_ENTITY_ID_FIELD,
   RESERVED_LAST_SEEN_FIELD,
   SERVABLE_IDENTITY_RULE,
   getIdentityCompositions,
@@ -368,7 +372,7 @@ describe('dynamic definition rules', () => {
     });
   });
 
-  describe('display labels are identity fields or attributes', () => {
+  describe('display labels are identity fields, attributes or metrics', () => {
     const withLabels = (displayLabels: Array<{ name: string; label: string }>) =>
       definition(hostIdentity, {
         dynamic: {
@@ -376,6 +380,14 @@ describe('dynamic definition rules', () => {
             {
               indexPattern: 'metrics-a-*',
               attributes: [{ name: 'os_name', field: 'host.os.name' }],
+              metrics: [
+                {
+                  name: 'system.cpu.utilization',
+                  field: 'system.cpu.utilization',
+                  agg: 'last',
+                  unit: 'percent',
+                },
+              ],
             },
             {
               indexPattern: 'metrics-b-*',
@@ -393,6 +405,10 @@ describe('dynamic definition rules', () => {
           { name: 'arch', label: 'Architecture' },
         ])
       );
+    });
+
+    it('accepts a label for a metric of a source', () => {
+      expectAccepted(withLabels([{ name: 'system.cpu.utilization', label: 'CPU utilization' }]));
     });
 
     it('accepts a label for an identity field', () => {
@@ -423,6 +439,175 @@ describe('dynamic definition rules', () => {
         withLabels([{ name: 'entity.id', label: 'ID' }]),
         ['dynamic', 'displayLabels', 0, 'name'],
         DISPLAY_LABEL_RULE
+      );
+    });
+  });
+
+  describe('metrics rules', () => {
+    const withMetrics = (
+      sources: DynamicBlock['sources'],
+      displayLabels?: DynamicBlock['displayLabels']
+    ) => definition(hostIdentity, { dynamic: { sources, displayLabels } });
+
+    it('rejects a metric field that is an identity field', () => {
+      expectRejected(
+        withMetrics([
+          {
+            indexPattern: 'metrics-a-*',
+            metrics: [{ name: 'cpu', field: 'host.name', agg: 'last' }],
+          },
+        ]),
+        ['dynamic', 'sources', 0, 'metrics', 0, 'field'],
+        NO_IDENTITY_METRIC_RULE
+      );
+    });
+
+    it('rejects entity.id as a metric field', () => {
+      expectRejected(
+        withMetrics([
+          {
+            indexPattern: 'metrics-a-*',
+            metrics: [{ name: 'cpu', field: RESERVED_ENTITY_ID_FIELD, agg: 'last' }],
+          },
+        ]),
+        ['dynamic', 'sources', 0, 'metrics', 0, 'field'],
+        METRIC_NAME_RULE
+      );
+    });
+
+    it('rejects last_seen as a metric field', () => {
+      expectRejected(
+        withMetrics([
+          {
+            indexPattern: 'metrics-a-*',
+            metrics: [{ name: 'cpu', field: RESERVED_LAST_SEEN_FIELD, agg: 'last' }],
+          },
+        ]),
+        ['dynamic', 'sources', 0, 'metrics', 0, 'field'],
+        METRIC_NAME_RULE
+      );
+    });
+    it('rejects a metric name that collides with an attribute on another source', () => {
+      expectRejected(
+        withMetrics([
+          {
+            indexPattern: 'metrics-a-*',
+            attributes: [{ name: 'available', field: 'k8s.deployment.available' }],
+          },
+          {
+            indexPattern: 'metrics-b-*',
+            metrics: [
+              { name: 'available', field: 'kubernetes.deployment.replicas.available', agg: 'last' },
+            ],
+          },
+        ]),
+        ['dynamic', 'sources', 1, 'metrics', 0, 'name'],
+        METRIC_NAME_RULE
+      );
+    });
+
+    it('rejects a reserved metric name', () => {
+      expectRejected(
+        withMetrics([
+          {
+            indexPattern: 'metrics-a-*',
+            metrics: [{ name: RESERVED_ENTITY_ID_FIELD, field: 'host.cpu', agg: 'last' }],
+          },
+        ]),
+        ['dynamic', 'sources', 0, 'metrics', 0, 'name'],
+        METRIC_NAME_RULE
+      );
+    });
+
+    it('rejects last_seen as a metric name', () => {
+      expectRejected(
+        withMetrics([
+          {
+            indexPattern: 'metrics-a-*',
+            metrics: [{ name: RESERVED_LAST_SEEN_FIELD, field: 'host.cpu', agg: 'last' }],
+          },
+        ]),
+        ['dynamic', 'sources', 0, 'metrics', 0, 'name'],
+        METRIC_NAME_RULE
+      );
+    });
+
+    it('rejects a metric name that is an identity field', () => {
+      expectRejected(
+        withMetrics([
+          {
+            indexPattern: 'metrics-a-*',
+            metrics: [{ name: 'host.name', field: 'system.cpu.utilization', agg: 'last' }],
+          },
+        ]),
+        ['dynamic', 'sources', 0, 'metrics', 0, 'name'],
+        METRIC_NAME_RULE
+      );
+    });
+
+    it('rejects the same metric name with different aggs across sources', () => {
+      expectRejected(
+        withMetrics([
+          {
+            indexPattern: 'metrics-a-*',
+            metrics: [{ name: 'cpu', field: 'a', agg: 'last', unit: 'percent' }],
+          },
+          {
+            indexPattern: 'metrics-b-*',
+            metrics: [{ name: 'cpu', field: 'b', agg: 'avg', unit: 'percent' }],
+          },
+        ]),
+        ['dynamic', 'sources', 1, 'metrics', 0, 'name'],
+        METRIC_CONSISTENCY_RULE
+      );
+    });
+
+    it('rejects the same metric name with different units across sources', () => {
+      expectRejected(
+        withMetrics([
+          {
+            indexPattern: 'metrics-a-*',
+            metrics: [{ name: 'cpu', field: 'a', agg: 'last', unit: 'percent' }],
+          },
+          {
+            indexPattern: 'metrics-b-*',
+            metrics: [{ name: 'cpu', field: 'b', agg: 'last', unit: 'ratio' }],
+          },
+        ]),
+        ['dynamic', 'sources', 1, 'metrics', 0, 'name'],
+        METRIC_CONSISTENCY_RULE
+      );
+    });
+
+    it('rejects the same metric name when only one source sets unit', () => {
+      expectRejected(
+        withMetrics([
+          {
+            indexPattern: 'metrics-a-*',
+            metrics: [{ name: 'cpu', field: 'a', agg: 'last', unit: 'percent' }],
+          },
+          {
+            indexPattern: 'metrics-b-*',
+            metrics: [{ name: 'cpu', field: 'b', agg: 'last' }],
+          },
+        ]),
+        ['dynamic', 'sources', 1, 'metrics', 0, 'name'],
+        METRIC_CONSISTENCY_RULE
+      );
+    });
+
+    it('accepts the same metric name with the same agg and unit across sources', () => {
+      expectAccepted(
+        withMetrics([
+          {
+            indexPattern: 'metrics-a-*',
+            metrics: [{ name: 'cpu', field: 'a', agg: 'last', unit: 'percent' }],
+          },
+          {
+            indexPattern: 'metrics-b-*',
+            metrics: [{ name: 'cpu', field: 'b', agg: 'last', unit: 'percent' }],
+          },
+        ])
       );
     });
   });

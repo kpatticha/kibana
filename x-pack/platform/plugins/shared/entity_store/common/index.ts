@@ -145,9 +145,14 @@ export type { EntityDefinitionManagedBy } from './domain/definitions/entity_sche
 export type {
   DynamicAttribute,
   DynamicDisplayLabel,
+  DynamicMetric,
+  DynamicMetricAgg,
+  DynamicMetricUnit,
   DynamicSource,
 } from './domain/definitions/dynamic';
 export {
+  METRIC_AGGS,
+  METRIC_UNITS,
   getIdentityCompositions,
   getIdentityFields,
   getPresenceFilter,
